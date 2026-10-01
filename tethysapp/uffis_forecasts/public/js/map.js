@@ -1,12 +1,14 @@
 /**
  * The Leaflet map: basemap, one product overlay at a time, and its legend.
- * Uses the Leaflet global (L) loaded by index.html.
+ * Uses the Leaflet global (L) loaded by the page.
  */
 
 import { element } from "./dom.js";
 
 const OSM_TILES = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 const OSM_CREDIT = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+
+const FIT = { padding: [16, 16] };
 
 /** A web map that shows one coloured raster and its legend. */
 export class ViewerMap {
@@ -18,6 +20,9 @@ export class ViewerMap {
     L.tileLayer(OSM_TILES, { maxZoom: 18, attribution: OSM_CREDIT }).addTo(this.map);
     this.overlay = null;
     this.features = null;
+    this.opacity = 0.85;
+    this.home = null;
+    this.addHomeButton();
     this.legend = L.control({ position: "bottomleft" });
     this.legend.onAdd = () => element("div", "legend");
     this.legend.addTo(this.map);
@@ -31,8 +36,48 @@ export class ViewerMap {
    */
   show(imageUrl, bounds, fit) {
     this.clear();
-    this.overlay = L.imageOverlay(imageUrl, bounds, { opacity: 0.85, className: "raster" }).addTo(this.map);
-    if (fit) this.map.fitBounds(bounds, { padding: [16, 16] });
+    this.overlay = L.imageOverlay(imageUrl, bounds, { opacity: this.opacity, className: "raster" }).addTo(this.map);
+    if (fit) this.fit(bounds);
+  }
+
+  /**
+   * Zoom to bounds and remember them for the home button.
+   * @param {L.LatLngBoundsExpression} bounds
+   */
+  fit(bounds) {
+    this.home = bounds;
+    this.map.fitBounds(bounds, FIT);
+  }
+
+  /** Zoom back to the last fitted layer. */
+  goHome() {
+    if (this.home) this.map.fitBounds(this.home, FIT);
+  }
+
+  /** Add a button under the zoom control that calls goHome. */
+  addHomeButton() {
+    const control = L.control({ position: "topleft" });
+    control.onAdd = () => {
+      const box = element("div", "leaflet-bar home");
+      const button = element("button", "", "⌂");
+      button.type = "button";
+      button.title = "Zoom to the country";
+      button.setAttribute("aria-label", "Zoom to the country");
+      button.addEventListener("click", () => this.goHome());
+      box.append(button);
+      L.DomEvent.disableClickPropagation(box);
+      return box;
+    };
+    control.addTo(this.map);
+  }
+
+  /**
+   * Set the raster overlay's opacity, now and for later layers.
+   * @param {number} opacity 0 to 1
+   */
+  setOpacity(opacity) {
+    this.opacity = opacity;
+    if (this.overlay) this.overlay.setOpacity(opacity);
   }
 
   /** Remove the overlay, if any. */
@@ -57,7 +102,7 @@ export class ViewerMap {
       },
       onEachFeature: (feature, layer) => layer.bindPopup(() => popup(feature.properties)),
     }).addTo(this.map);
-    if (fit) this.map.fitBounds(this.features.getBounds(), { padding: [16, 16] });
+    if (fit) this.fit(this.features.getBounds());
   }
 
   /** Remove the vector layer, if any. */

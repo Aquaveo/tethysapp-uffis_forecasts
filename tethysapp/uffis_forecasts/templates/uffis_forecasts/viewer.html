@@ -1,60 +1,76 @@
 <section id="uffis-viewer" class="uffis-viewer" data-outputs-base="{{ outputs_base }}" aria-labelledby="viewer-title">
-  <header class="viewer-head">
-    <h1 id="viewer-title">UFFIS Forecasts</h1>
-    <p>Hourly EF5 flash flood and impact based forecasts on the cloud.</p>
-  </header>
+  <div id="map" class="map" role="region" aria-label="Forecast map"></div>
 
-  <noscript><p class="detail alert">The forecast viewer needs JavaScript. The agency portals are listed under About UFFIS.</p></noscript>
+  <noscript><p class="float noscript">The forecast map needs JavaScript. The agency portals are listed under About UFFIS.</p></noscript>
 
-  <section aria-labelledby="status-title">
-    <h2 id="status-title">Status</h2>
-    <div id="status" class="board" aria-live="polite"><p class="detail">Loading…</p></div>
-    <p id="stamp" class="stamp"></p>
-  </section>
+  <button id="toggle-controls" class="float float-btn toggle" type="button" aria-controls="panel" aria-expanded="true">Hide controls</button>
 
-  <section aria-labelledby="map-title" class="viewer">
-    <h2 id="map-title">Latest cycle</h2>
+  <aside id="panel" class="float panel" aria-labelledby="viewer-title">
+    <h1 id="viewer-title" class="panel-title">UFFIS Forecasts</h1>
+    <div id="status" class="panel-status" aria-live="polite"><p class="detail">Loading…</p></div>
+
     <form id="controls" class="controls">
-      <label>Country <select name="country"></select></label>
-      <label>Product
-        <select name="product">
-          <option value="qpeaccum">Rainfall accumulation</option>
-          <option value="maxunitq">Max unit streamflow</option>
-          <option value="maxsm">Soil saturation</option>
-          <option value="flood">Flood probability</option>
-          <option value="impact">Impact (IBF)</option>
-        </select>
-      </label>
-      <label>Grid <select name="basin"></select></label>
-      <label>Statistic
-        <select name="stat">
-          <option value="median">Median</option>
-          <option value="min">Min</option>
-          <option value="max">Max</option>
-        </select>
-      </label>
-      <label>Period
-        <select name="period">
-          <option value="forecast">Forecast</option>
-          <option value="nowcast">Nowcast</option>
-        </select>
-      </label>
-      <label>Flood site <select name="site"></select></label>
-      <label>Depth <select name="depth"></select></label>
-    </form>
-    <div id="map" class="map" role="region" aria-label="Forecast map"></div>
-    <p id="info" class="info" aria-live="polite"></p>
-  </section>
+      <fieldset>
+        <legend>Hydrologic outputs</legend>
+        <label class="option"><input type="radio" name="product" value="maxunitq"><span>Unit streamflow (max)</span></label>
+        <label class="option"><input type="radio" name="product" value="maxsm"><span>Soil saturation (max)</span></label>
+        <label class="option"><input type="radio" name="product" value="flood"><span>Flood probability</span></label>
+      </fieldset>
+      <fieldset>
+        <legend>Precipitation</legend>
+        <label class="option"><input type="radio" name="product" value="qpeaccum" checked><span>Rainfall accumulation</span></label>
+      </fieldset>
+      <fieldset>
+        <legend>Impact</legend>
+        <label class="option"><input type="radio" name="product" value="impact"><span>Impact (IBF)</span></label>
+      </fieldset>
 
-  <section aria-labelledby="files-title" class="files">
+      <fieldset class="settings">
+        <legend>Layer</legend>
+        <label>Grid <select name="basin"></select></label>
+        <label>Statistic
+          <select name="stat">
+            <option value="median">Median</option>
+            <option value="min">Min</option>
+            <option value="max">Max</option>
+          </select>
+        </label>
+        <label>Period
+          <select name="period">
+            <option value="forecast">Forecast</option>
+            <option value="nowcast">Nowcast</option>
+          </select>
+        </label>
+        <label>Flood site <select name="site"></select></label>
+        <label>Depth <select name="depth"></select></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Regions</legend>
+        <div id="regions" class="chips"></div>
+      </fieldset>
+
+      <label class="opacity">
+        <span>Opacity <output id="opacity-value" for="opacity">85%</output></span>
+        <input id="opacity" type="range" name="opacity" min="0" max="100" value="85">
+      </label>
+    </form>
+
+    <button id="open-files" class="panel-btn" type="button">Files and data access</button>
+    <p id="stamp" class="stamp"></p>
+  </aside>
+
+  <div class="float cycle-bar">
+    <p id="info" class="info" aria-live="polite"></p>
+  </div>
+
+  <dialog id="files-panel" class="files-panel" aria-labelledby="files-title">
+    <form method="dialog" class="sheet-close"><button type="submit">Close</button></form>
     <h2 id="files-title">Files and data access</h2>
-    <p class="detail">For the country chosen above. Every file is public at a stable URL.</p>
+    <p class="detail">For the selected country. Every file is public at a stable URL, under <code>{{ outputs_base }}</code>.</p>
     <div id="access"></div>
     <label class="filter">Filter files <input id="file-filter" type="search" placeholder="e.g. summary or prob_depth"></label>
     <p id="files-summary" class="stamp"></p>
     <div id="files"></div>
-  </section>
-
-  <p class="viewer-foot">Data: <code>{{ outputs_base }}/&lt;country&gt;/latest.json</code> and each cycle's <code>index.json</code>.
-    Colours follow the forecast app's legends.</p>
+  </dialog>
 </section>

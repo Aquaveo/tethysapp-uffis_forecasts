@@ -138,9 +138,14 @@ async function check(evaluate) {
   if (!access.includes("/outputs/guatemala/latest.json")) throw new Error(`data access box: ${access}`);
   await evaluate('(() => { const f = document.getElementById("file-filter"); f.value = "prob_depth"; f.dispatchEvent(new Event("input")); })()');
   await waitFor(evaluate, 'document.getElementById("files-summary").textContent.startsWith("1 file matching") && [...document.querySelectorAll("#files a")].some((a) => a.href.endsWith("prob_depth_ge_10cm_overbank.20260101.000000.tif"))', "filtered tree with the flood raster link");
-  await evaluate('(() => { const f = document.getElementById("controls"); f.product.value = "flood"; f.product.dispatchEvent(new Event("change", { bubbles: true })); })()');
+  await evaluate('(() => { const o = document.getElementById("opacity"); o.value = "40"; o.dispatchEvent(new Event("input")); })()');
+  await waitFor(evaluate, 'document.querySelector("img.raster")?.style.opacity === "0.4" && document.getElementById("opacity-value").textContent === "40%"', "raster at 40% opacity");
+  await evaluate('document.getElementById("open-files").click()');
+  await waitFor(evaluate, 'document.getElementById("files-panel").open', "files sheet open");
+  await evaluate('document.getElementById("files-panel").close()');
+  await evaluate('document.querySelector("input[name=product][value=flood]").click()');
   await waitFor(evaluate, 'document.getElementById("info").textContent.includes("prob_depth_ge_10cm") && document.getElementById("info").textContent.includes(" 5 cells shown")', "flood map with 5 cells");
-  await evaluate('(() => { const f = document.getElementById("controls"); f.product.value = "impact"; f.product.dispatchEvent(new Event("change", { bubbles: true })); })()');
+  await evaluate('document.querySelector("input[name=product][value=impact]").click()');
   await waitFor(evaluate, 'document.getElementById("info").textContent.startsWith("Buildings at risk: 1 high, 2 medium, 5 low. People at low risk or worse: 42.") && document.querySelectorAll("path.leaflet-interactive").length === 1', "impact view with one municipality");
 }
 
@@ -149,7 +154,8 @@ async function check(evaluate) {
  * @param {(expression: string) => Promise<any>} evaluate
  */
 async function checkOutage(evaluate) {
-  await waitFor(evaluate, '[...document.querySelectorAll("#status .card")].filter((c) => c.textContent.includes("No outputs found")).length === 5', "five failed status cards");
+  await waitFor(evaluate, 'document.querySelectorAll("#regions .chip.error").length === 5', "five failed region chips");
+  await waitFor(evaluate, 'document.querySelector("#status .card")?.textContent.includes("No outputs found")', "failed status card");
   await waitFor(evaluate, 'document.getElementById("info").textContent.startsWith("Could not load this layer")', "map error line");
 }
 
@@ -163,7 +169,7 @@ try {
   const down = await openPage(devtools, `http://127.0.0.1:${port}/?down=1`);
   await checkOutage(down.evaluate);
   down.close();
-  console.log("viewer smoke test ok: status board, rainfall, flood and impact maps, file tree, outage");
+  console.log("viewer smoke test ok: status, rainfall, opacity, files sheet, flood and impact maps, file tree, outage");
 } catch (error) {
   failed = true;
   console.error(`viewer smoke test failed: ${error.message}`);

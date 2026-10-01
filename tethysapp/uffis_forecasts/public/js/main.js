@@ -1,5 +1,5 @@
 /**
- * Page entry point: wires the status board, the controls and the map.
+ * Page entry point: wires the control panel, the files sheet and the map.
  */
 
 import { COUNTRIES, FLOOD_DEPTHS_CM, IMPACT_LEGEND, LEGENDS } from "./config.js";
@@ -8,6 +8,7 @@ import { classifyCells, drawnCount, paintCells } from "./colors.js";
 import { element, setOptions } from "./dom.js";
 import { buildTree, filterFiles, folderElement, formatBytes } from "./files.js";
 import { ViewerMap } from "./map.js";
+import { fillRegions, markRegions } from "./panel.js";
 import { popupElement, riskSummary } from "./impact.js";
 import { chosenLayer, siteChoices } from "./layers.js";
 import { basinsOf, cycleTime, fetchJson, loadCycle, outputsBase, withoutCountry } from "./outputs.js";
@@ -19,20 +20,54 @@ const base = outputsBase(window.location, document.getElementById("uffis-viewer"
 const form = document.getElementById("controls");
 const info = document.getElementById("info");
 const filter = document.getElementById("file-filter");
+const regions = document.getElementById("regions");
 const viewer = new ViewerMap(document.getElementById("map"));
 const cycles = new Map();
 let drawToken = 0;
 let fittedKey = "";
 let filesCycle = null;
+let statuses = [];
 
 /**
- * Reload every country's card and the time stamp under the board.
+ * Reload every country's status, colour the region chips and stamp
+ * the panel.
  */
 async function refreshStatus() {
-  const statuses = await Promise.all(COUNTRIES.map((country) => loadStatus(base, country)));
+  statuses = await Promise.all(COUNTRIES.map((country) => loadStatus(base, country)));
   const now = new Date();
-  document.getElementById("status").replaceChildren(...statuses.map((s) => statusCard(s, now)));
+  markRegions(regions, statuses, now);
+  showSelectedStatus();
   document.getElementById("stamp").textContent = `Checked ${now.toISOString().slice(11, 16)} UTC, refreshes every 5 minutes`;
+}
+
+/**
+ * Title the panel with the selected country and show its status card.
+ */
+function showSelectedStatus() {
+  const key = form.country.value;
+  document.getElementById("viewer-title").textContent = COUNTRIES.find((c) => c.key === key).name;
+  const status = statuses.find((s) => s.key === key);
+  if (status) document.getElementById("status").replaceChildren(statusCard(status, new Date()));
+}
+
+/**
+ * Show or hide the control panel from its toggle button.
+ * @param {HTMLButtonElement} button
+ */
+function togglePanel(button) {
+  const panel = document.getElementById("panel");
+  panel.hidden = !panel.hidden;
+  button.setAttribute("aria-expanded", String(!panel.hidden));
+  button.textContent = panel.hidden ? "Show controls" : "Hide controls";
+}
+
+/**
+ * Apply the opacity slider to the map and its readout.
+ */
+function applyOpacity() {
+  const percent = Number(form.opacity.value);
+  viewer.setOpacity(percent / 100);
+  document.getElementById("opacity-value").textContent = `${percent}%`;
 }
 
 /**
@@ -240,12 +275,20 @@ function refresh() {
  * Set up controls, first draw and the status refresh timer.
  */
 function start() {
-  setOptions(form.country, COUNTRIES.map((c) => ({ value: c.key, label: c.name })));
+  fillRegions(regions, COUNTRIES);
   setOptions(form.depth, FLOOD_DEPTHS_CM.map((d) => ({ value: String(d), label: `${d} cm` })));
-  form.country.addEventListener("change", changeCountry);
   filter.addEventListener("input", () => filesCycle && showFiles(filesCycle));
+  form.opacity.addEventListener("input", applyOpacity);
+  const toggle = document.getElementById("toggle-controls");
+  toggle.addEventListener("click", () => togglePanel(toggle));
+  document.getElementById("open-files").addEventListener("click", () => document.getElementById("files-panel").showModal());
   form.addEventListener("change", async (event) => {
-    if (event.target.name === "country") return;
+    if (event.target.name === "opacity") return;
+    if (event.target.name === "country") {
+      showSelectedStatus();
+      changeCountry();
+      return;
+    }
     if (event.target.name === "product") {
       try {
         fillCycleOptions(await countryCycle(form.country.value));
@@ -258,6 +301,7 @@ function start() {
     draw();
   });
   toggleControls();
+  if (window.matchMedia("(max-width: 640px)").matches) togglePanel(toggle);
   refresh();
   setInterval(refresh, REFRESH_MS);
 }
