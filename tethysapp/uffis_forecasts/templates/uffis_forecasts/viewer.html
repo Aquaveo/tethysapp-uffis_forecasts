@@ -1,0 +1,60 @@
+<section id="uffis-viewer" class="uffis-viewer" data-outputs-base="{{ outputs_base }}" aria-labelledby="viewer-title">
+  <header class="viewer-head">
+    <h1 id="viewer-title">UFFIS Forecasts</h1>
+    <p>Hourly EF5 flash flood and impact based forecasts on the cloud.</p>
+  </header>
+
+  <noscript><p class="detail alert">The forecast viewer needs JavaScript. The agency portals are listed under About UFFIS.</p></noscript>
+
+  <section aria-labelledby="status-title">
+    <h2 id="status-title">Status</h2>
+    <div id="status" class="board" aria-live="polite"><p class="detail">Loading…</p></div>
+    <p id="stamp" class="stamp"></p>
+  </section>
+
+  <section aria-labelledby="map-title" class="viewer">
+    <h2 id="map-title">Latest cycle</h2>
+    <form id="controls" class="controls">
+      <label>Country <select name="country"></select></label>
+      <label>Product
+        <select name="product">
+          <option value="qpeaccum">Rainfall accumulation</option>
+          <option value="maxunitq">Max unit streamflow</option>
+          <option value="maxsm">Soil saturation</option>
+          <option value="flood">Flood probability</option>
+          <option value="impact">Impact (IBF)</option>
+        </select>
+      </label>
+      <label>Grid <select name="basin"></select></label>
+      <label>Statistic
+        <select name="stat">
+          <option value="median">Median</option>
+          <option value="min">Min</option>
+          <option value="max">Max</option>
+        </select>
+      </label>
+      <label>Period
+        <select name="period">
+          <option value="forecast">Forecast</option>
+          <option value="nowcast">Nowcast</option>
+        </select>
+      </label>
+      <label>Flood site <select name="site"></select></label>
+      <label>Depth <select name="depth"></select></label>
+    </form>
+    <div id="map" class="map" role="region" aria-label="Forecast map"></div>
+    <p id="info" class="info" aria-live="polite"></p>
+  </section>
+
+  <section aria-labelledby="files-title" class="files">
+    <h2 id="files-title">Files and data access</h2>
+    <p class="detail">For the country chosen above. Every file is public at a stable URL.</p>
+    <div id="access"></div>
+    <label class="filter">Filter files <input id="file-filter" type="search" placeholder="e.g. summary or prob_depth"></label>
+    <p id="files-summary" class="stamp"></p>
+    <div id="files"></div>
+  </section>
+
+  <p class="viewer-foot">Data: <code>{{ outputs_base }}/&lt;country&gt;/latest.json</code> and each cycle's <code>index.json</code>.
+    Colours follow the forecast app's legends.</p>
+</section>

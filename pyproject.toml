@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tethysapp-uffis_forecasts"
+version = "0.1.0"
+description = "UFFIS flash flood forecast viewer for the uffis.org apex."
+requires-python = ">=3.10"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["tethysapp*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.html", "*.js", "*.css", "*.png"]
