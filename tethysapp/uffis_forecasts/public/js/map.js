@@ -118,6 +118,7 @@ export class ViewerMap {
       pane: "gauges", radius: 7, weight: 2, color: "#111827", fillColor: "#22d3ee", fillOpacity: 1,
     }).bindTooltip(gaugeLabel(gauge.name)).on("click", () => onSelect(gauge)));
     this.gauges = L.layerGroup(markers).addTo(this.map);
+    markers.forEach((marker, i) => focusable(marker.getElement(), gauges[i], () => onSelect(gauges[i])));
   }
 
   /** Remove the gauge markers, if any. */
@@ -162,4 +163,21 @@ export class ViewerMap {
 export function gaugeLabel(name) {
   const words = name.replaceAll("_", " ");
   return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+/**
+ * Let a gauge marker take keyboard focus and open on Enter or Space.
+ * @param {SVGElement} element the marker's path
+ * @param {{name: string}} gauge
+ * @param {() => void} open
+ */
+function focusable(element, gauge, open) {
+  element.setAttribute("tabindex", "0");
+  element.setAttribute("role", "button");
+  element.setAttribute("aria-label", `Hydrograph for ${gaugeLabel(gauge.name)}`);
+  element.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    open();
+  });
 }

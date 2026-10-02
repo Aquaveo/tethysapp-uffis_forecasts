@@ -8,9 +8,9 @@ import { classifyCells, drawnCount, paintCells } from "./colors.js";
 import { element, setOptions } from "./dom.js";
 import { buildTree, filterFiles, folderElement, formatBytes } from "./files.js";
 import { RUNS, ensembleStats, gaugeFiles, parseGauges, parseSeries } from "./gauges.js";
-import { RUN_STYLE, hydrographSvg } from "./hydrograph.js";
+import { RUN_STYLE, hydrographSummary, hydrographSvg } from "./hydrograph.js";
 import { ViewerMap, gaugeLabel } from "./map.js";
-import { agenciesByCountry, fillRegions, markRegions, showAgency } from "./panel.js";
+import { agenciesByCountry, fillGauges, fillRegions, markRegions, showAgency } from "./panel.js";
 import { popupElement, riskSummary } from "./impact.js";
 import { chosenLayer, siteChoices } from "./layers.js";
 import { basinsOf, cycleTime, fetchJson, fetchOk, loadCycle, loadCycleAt, outputsBase, withoutCountry } from "./outputs.js";
@@ -142,9 +142,31 @@ async function showTime() {
 async function setOffset(hours) {
   offset = clampOffset(hours);
   slider.value = String(offset);
+  updateTimeButtons();
   closeHydrograph();
   showTime();
   await changeCountry();
+}
+
+/**
+ * Disable the steps that would leave the kept cycles, and Now at the
+ * latest cycle.
+ */
+function updateTimeButtons() {
+  for (const button of document.querySelectorAll("[data-step]")) {
+    const step = Number(button.dataset.step);
+    button.disabled = step < 0 ? offset === -HOURS_BACK : offset === 0;
+  }
+  document.getElementById("cycle-now").disabled = offset === 0;
+}
+
+/**
+ * Keep screen readers quiet while playing; announce cycles otherwise.
+ */
+function setAnnouncements() {
+  const mode = playing ? "off" : "polite";
+  document.getElementById("cycle-label").setAttribute("aria-live", mode);
+  info.setAttribute("aria-live", mode);
 }
 
 /**
@@ -156,6 +178,7 @@ async function togglePlay(button) {
   playing = !playing;
   button.setAttribute("aria-pressed", String(playing));
   button.textContent = playing ? "Pause" : "Play";
+  setAnnouncements();
   if (!playing) return;
   if (offset === 0) await setOffset(-HOURS_BACK);
   while (playing && offset < 0) {
@@ -317,7 +340,10 @@ function showFiles(cycle) {
  * @param {Error} error
  */
 function showError(error) {
-  info.textContent = `Could not load this layer: ${error.message}`;
+  const retry = element("button", "action", "try again");
+  retry.type = "button";
+  retry.addEventListener("click", refresh);
+  info.replaceChildren(`Could not load this layer: ${error.message} `, retry);
 }
 
 /**
@@ -327,7 +353,9 @@ function showError(error) {
  */
 async function showGauges(cycle) {
   const token = ++gaugeToken;
+  const list = document.getElementById("gauge-buttons");
   viewer.clearGauges();
+  fillGauges(list, [], gaugeLabel, () => {});
   if (!form.gauges.checked) return;
   const grids = gaugeFiles(cycle.paths);
   const grid = grids[form.basin.value] ? form.basin.value : Object.keys(grids)[0];
@@ -336,7 +364,9 @@ async function showGauges(cycle) {
     const text = await (await fetchOk(`${cycle.root}/${grids[grid].control}`)).text();
     if (token !== gaugeToken) return;
     const located = parseGauges(text).filter((g) => grids[grid].gauges[g.name]);
-    viewer.showGauges(located, (gauge) => openHydrograph(cycle, gauge, grids[grid].gauges[gauge.name]));
+    const open = (gauge) => openHydrograph(cycle, gauge, grids[grid].gauges[gauge.name]);
+    viewer.showGauges(located, open);
+    fillGauges(list, located, gaugeLabel, open);
   } catch (error) {
     if (token === gaugeToken) showError(error);
   }
@@ -367,8 +397,12 @@ async function openHydrograph(cycle, gauge, files) {
   const legend = document.getElementById("hydro-legend");
   panel.hidden = false;
   panel.dataset.gauge = gauge.name;
-  document.getElementById("hydro-title").textContent = gaugeLabel(gauge.name);
+  const title = document.getElementById("hydro-title");
+  const summary = document.getElementById("hydro-summary");
+  title.textContent = gaugeLabel(gauge.name);
+  title.focus();
   chart.textContent = "Loading…";
+  summary.textContent = "";
   legend.replaceChildren();
   const loaded = await Promise.all(RUNS.filter((r) => files[r]).map(async (run) => ({ run, ...await runStats(cycle.root, files[run]) })));
   const runs = loaded.filter((r) => r.stats.length);
@@ -378,6 +412,7 @@ async function openHydrograph(cycle, gauge, files) {
     return;
   }
   chart.replaceChildren(hydrographSvg(runs, cycleTime(cycle.latest.cycle).getTime(), HYDRO_SIZE));
+  summary.textContent = hydrographSummary(runs);
   legend.replaceChildren(...runs.map(({ run, members }) => {
     const item = element("li");
     const swatch = element("span", "swatch");
@@ -482,6 +517,7 @@ function start() {
     draw();
   });
   toggleControls();
+  updateTimeButtons();
   if (window.matchMedia("(max-width: 640px)").matches) togglePanel(toggle);
   refresh();
   setInterval(refresh, REFRESH_MS);

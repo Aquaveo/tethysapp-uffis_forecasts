@@ -133,14 +133,19 @@ async function waitFor(evaluate, expression, what) {
 async function check(evaluate) {
   const card = await waitFor(evaluate, 'document.querySelector("#status .card")?.textContent', "status cards");
   if (!card.includes("1 of 1 flood sites triggered")) throw new Error(`Guatemala card: ${card}`);
+  const region = await evaluate('document.querySelector("#regions .chip").title');
+  if (!region.startsWith("Guatemala, published")) throw new Error(`region note: ${region}`);
   const agency = await evaluate('document.getElementById("agency").textContent + " " + document.querySelector("#agency a")?.href');
   if (!agency.startsWith("Warnings for Guatemala: INSIVUMEH portal https://insivumeh.uffis.org")) throw new Error(`agency line: ${agency}`);
   await waitFor(evaluate, 'document.getElementById("info").textContent.includes("qpeaccum") && document.getElementById("info").textContent.includes(" 7 cells shown")', "rainfall map with 7 cells");
   await checkTimeline(evaluate);
   await waitFor(evaluate, 'document.getElementById("files-summary").textContent.startsWith("10 files")', "file tree with 10 files");
   await waitFor(evaluate, 'document.querySelectorAll(".leaflet-gauges-pane path").length === 1', "one gauge marker");
-  await evaluate('document.querySelector(".leaflet-gauges-pane path").dispatchEvent(new MouseEvent("click", { bubbles: true }))');
-  await waitFor(evaluate, 'document.querySelectorAll("#hydro-chart path.median").length === 2 && document.getElementById("hydro-title").textContent === "Test gauge"', "hydrograph with two runs");
+  await waitFor(evaluate, 'document.querySelectorAll("#gauge-buttons .gauge-btn").length === 1 && document.querySelector("#gauge-buttons .gauge-btn").textContent === "Test gauge"', "gauge list button");
+  await evaluate('(() => { const p = document.querySelector(".leaflet-gauges-pane path"); p.focus(); p.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })); })()');
+  await waitFor(evaluate, 'document.querySelectorAll("#hydro-chart path.median").length === 2 && document.getElementById("hydro-title").textContent === "Test gauge" && document.activeElement.id === "hydro-title"', "hydrograph opened from the keyboard");
+  const summary = await evaluate('document.getElementById("hydro-summary").textContent');
+  if (!summary.startsWith("Median peaks: Satellite rainfall (STREAM-SAT) 18.0 m³/s at 00:00 1 Jan; Forecast (StormLab) 29.0 m³/s")) throw new Error(`hydrograph summary: ${summary}`);
   const legend = await evaluate('document.getElementById("hydro-legend").textContent');
   if (!legend.includes("2 members")) throw new Error(`hydrograph legend: ${legend}`);
   await evaluate('document.getElementById("close-hydro").click()');
@@ -167,7 +172,7 @@ async function checkTimeline(evaluate) {
   const label = 'document.getElementById("cycle-label").textContent';
   const info = 'document.getElementById("info").textContent';
   const step = (hours) => evaluate(`document.querySelector('[data-step="${hours}"]').click()`);
-  await waitFor(evaluate, `${label} === "2026-01-01 00:00 UTC · latest"`, "latest cycle label");
+  await waitFor(evaluate, `${label} === "2026-01-01 00:00 UTC · latest" && document.getElementById("cycle-now").disabled && document.querySelector('[data-step="1"]').disabled`, "latest cycle label with Now and later steps disabled");
   await step(-1);
   await waitFor(evaluate, `${label} === "2025-12-31 23:00 UTC · 1 h before latest" && ${info}.startsWith("Cycle 2025-12-31 23:00 UTC") && ${info}.includes(" 7 cells shown")`, "previous cycle drawn");
   await step(-1);

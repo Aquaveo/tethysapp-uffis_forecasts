@@ -79,6 +79,21 @@ export function bandPath(points) {
 }
 
 /**
+ * One sentence naming each run's median peak and when it happens,
+ * the chart's text alternative.
+ * @param {{run: string, stats: {time: number, median: number}[]}[]} runs
+ * @returns {string}
+ */
+export function hydrographSummary(runs) {
+  const peaks = runs.map(({ run, stats }) => {
+    const peak = stats.reduce((best, s) => (s.median > best.median ? s : best));
+    const when = `${TIME_FORMAT.format(peak.time)} ${DAY_FORMAT.format(peak.time)}`;
+    return `${RUN_STYLE[run].label} ${peak.median.toFixed(1)} m³/s at ${when}`;
+  });
+  return `Median peaks: ${peaks.join("; ")}.`;
+}
+
+/**
  * Create an SVG element with attributes.
  * @param {string} tag
  * @param {Record<string, string|number>} attributes
@@ -104,7 +119,7 @@ export function hydrographSvg(runs, cycle, { width, height }) {
   const yTicks = valueTicks(Math.max(...all.map((s) => s.high)), 4);
   const x = linear([start, end], [MARGIN.left, width - MARGIN.right]);
   const y = linear([0, yTicks.at(-1)], [height - MARGIN.bottom, MARGIN.top]);
-  const svg = node("svg", { viewBox: `0 0 ${width} ${height}`, class: "hydrograph", role: "img", "aria-label": "Discharge over time" });
+  const svg = node("svg", { viewBox: `0 0 ${width} ${height}`, class: "hydrograph", role: "img", "aria-label": hydrographSummary(runs) });
 
   for (const v of yTicks) {
     svg.append(node("line", { x1: MARGIN.left, x2: width - MARGIN.right, y1: y(v), y2: y(v), class: "grid" }));

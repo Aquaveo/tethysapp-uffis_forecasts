@@ -4,7 +4,7 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { bandPath, linear, linePath, timeTicks, valueTicks } from "../tethysapp/uffis_forecasts/public/js/hydrograph.js";
+import { bandPath, hydrographSummary, linear, linePath, timeTicks, valueTicks } from "../tethysapp/uffis_forecasts/public/js/hydrograph.js";
 
 const HOUR = 3600 * 1000;
 
@@ -33,4 +33,13 @@ test("time ticks fall on whole hours at a readable step", () => {
 test("line and band paths trace the points", () => {
   assert.equal(linePath([{ x: 0, y: 1 }, { x: 2, y: 3 }]), "M0.0,1.0L2.0,3.0");
   assert.equal(bandPath([{ x: 0, min: 5, max: 1 }, { x: 2, min: 6, max: 2 }]), "M0.0,1.0L2.0,2.0L2.0,6.0L0.0,5.0Z");
+});
+
+test("the summary names each run's median peak and when", () => {
+  const runs = [
+    { run: "stream_sat", stats: [{ time: Date.UTC(2026, 9, 1, 18), median: 12.04 }, { time: Date.UTC(2026, 9, 1, 19), median: 9 }] },
+    { run: "stormlab", stats: [{ time: Date.UTC(2026, 9, 2, 6), median: 3 }, { time: Date.UTC(2026, 9, 2, 12), median: 15.62 }] },
+  ];
+  assert.equal(hydrographSummary(runs),
+    "Median peaks: Satellite rainfall (STREAM-SAT) 12.0 m³/s at 18:00 1 Oct; Forecast (StormLab) 15.6 m³/s at 12:00 2 Oct.");
 });

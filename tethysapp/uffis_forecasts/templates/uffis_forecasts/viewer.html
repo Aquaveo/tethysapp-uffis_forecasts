@@ -52,6 +52,10 @@
       </fieldset>
 
       <label class="check"><input type="checkbox" name="gauges" checked> Gauge discharge</label>
+      <fieldset class="gauges" hidden>
+        <legend>Gauges</legend>
+        <div id="gauge-buttons" class="gauge-buttons"></div>
+      </fieldset>
 
       <label class="opacity">
         <span>Opacity <output id="opacity-value" for="opacity">85%</output></span>
@@ -65,16 +69,17 @@
 
   <section id="hydrograph" class="float hydro" aria-labelledby="hydro-title" hidden>
     <header class="hydro-head">
-      <h2 id="hydro-title">Gauge</h2>
+      <h2 id="hydro-title" tabindex="-1">Gauge</h2>
       <button id="close-hydro" type="button" aria-label="Close the hydrograph">Close</button>
     </header>
     <div id="hydro-chart" class="hydro-chart" aria-live="polite"></div>
+    <p id="hydro-summary" class="hydro-summary"></p>
     <ul id="hydro-legend" class="hydro-legend"></ul>
     <p class="hydro-note">Discharge in m³/s, times in UTC. Bands span the 10th to 90th percentile of the ensemble members and lines are their medians. The dashed line is the cycle time.</p>
   </section>
 
   <div class="float cycle-bar" role="group" aria-labelledby="cycle-label">
-    <p id="cycle-label" class="time-label">Loading…</p>
+    <p id="cycle-label" class="time-label" aria-live="polite">Loading…</p>
     <div class="time-controls">
       <button type="button" class="step wide-only" data-step="-6" aria-label="6 hours earlier">‹ 6h</button>
       <button type="button" class="step" data-step="-1" aria-label="1 hour earlier">‹ 1h</button>
