@@ -15,4 +15,4 @@ include-package-data = true
 include = ["tethysapp*"]
 
 [tool.setuptools.package-data]
-"*" = ["*.html", "*.js", "*.css", "*.png"]
+"*" = ["*.html", "*.js", "*.css", "*.png", "resources/.gitkeep"]
