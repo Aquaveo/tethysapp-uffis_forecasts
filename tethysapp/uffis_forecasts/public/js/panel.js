@@ -4,6 +4,7 @@
  */
 
 import { element } from "./dom.js";
+import { gaugeLabel } from "./gauges.js";
 import { ageLevel, ageMinutes, ageText } from "./status.js";
 
 const LEVELS = ["ok", "late", "stale", "error"];
@@ -16,7 +17,7 @@ const LEVELS = ["ok", "late", "stale", "error"];
  * @param {boolean} checked
  * @returns {HTMLLabelElement}
  */
-export function radioChip(name, value, label, checked) {
+function radioChip(name, value, label, checked) {
   const chip = element("label", "chip");
   const input = element("input");
   input.type = "radio";
@@ -108,15 +109,23 @@ export function showAgency(line, place, agency) {
  * List gauges as buttons, so hydrographs open without the map.
  * @param {HTMLElement} box
  * @param {{name: string}[]} gauges
- * @param {(name: string) => string} label display name for a gauge
  * @param {(gauge: {name: string}) => void} onSelect
  */
-export function fillGauges(box, gauges, label, onSelect) {
+export function fillGauges(box, gauges, onSelect) {
   box.replaceChildren(...gauges.map((gauge) => {
-    const button = element("button", "gauge-btn", label(gauge.name));
+    const button = element("button", "gauge-btn", gaugeLabel(gauge.name));
     button.type = "button";
     button.addEventListener("click", () => onSelect(gauge));
     return button;
   }));
   box.closest("fieldset").hidden = !gauges.length;
+}
+
+/**
+ * Empty and hide the gauge list.
+ * @param {HTMLElement} box
+ */
+export function clearGaugeList(box) {
+  box.replaceChildren();
+  box.closest("fieldset").hidden = true;
 }

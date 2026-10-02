@@ -4,6 +4,7 @@
  */
 
 import { element } from "./dom.js";
+import { gaugeLabel } from "./gauges.js";
 
 const OSM_TILES = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 const OSM_CREDIT = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
@@ -173,26 +174,16 @@ export class ViewerMap {
 }
 
 /**
- * A gauge's display name, from its EF5 name.
- * @param {string} name e.g. cuenca_villalobos_out
- * @returns {string}
- */
-export function gaugeLabel(name) {
-  const words = name.replaceAll("_", " ");
-  return words.charAt(0).toUpperCase() + words.slice(1);
-}
-
-/**
  * Let a gauge marker take keyboard focus and open on Enter or Space.
- * @param {SVGElement} element the marker's path
+ * @param {SVGElement} marker the marker's path
  * @param {{name: string}} gauge
  * @param {() => void} open
  */
-function focusable(element, gauge, open) {
-  element.setAttribute("tabindex", "0");
-  element.setAttribute("role", "button");
-  element.setAttribute("aria-label", `Hydrograph for ${gaugeLabel(gauge.name)}`);
-  element.addEventListener("keydown", (event) => {
+function focusable(marker, gauge, open) {
+  marker.setAttribute("tabindex", "0");
+  marker.setAttribute("role", "button");
+  marker.setAttribute("aria-label", `Hydrograph for ${gaugeLabel(gauge.name)}`);
+  marker.addEventListener("keydown", (event) => {
     if (event.key !== "Enter" && event.key !== " ") return;
     event.preventDefault();
     open();

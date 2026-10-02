@@ -43,6 +43,15 @@ export async function fetchJson(url) {
 }
 
 /**
+ * Fetch a text document.
+ * @param {string} url
+ * @returns {Promise<string>}
+ */
+export async function fetchText(url) {
+  return (await fetchOk(url)).text();
+}
+
+/**
  * Load one cycle of a country by its folder name.
  * @param {string} base
  * @param {string} country

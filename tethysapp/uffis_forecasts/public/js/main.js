@@ -7,13 +7,13 @@ import { accessElement, accessUrls } from "./access.js";
 import { classifyCells, drawnCount, paintCells } from "./colors.js";
 import { element, setOptions } from "./dom.js";
 import { buildTree, filterFiles, folderElement, formatBytes } from "./files.js";
-import { RUNS, ensembleStats, gaugeFiles, parseGauges, parseSeries } from "./gauges.js";
+import { RUNS, ensembleStats, gaugeFiles, gaugeLabel, parseGauges, parseSeries } from "./gauges.js";
 import { RUN_STYLE, hydrographSummary, hydrographSvg } from "./hydrograph.js";
-import { ViewerMap, gaugeLabel } from "./map.js";
-import { agenciesByCountry, fillGauges, fillRegions, markRegions, showAgency } from "./panel.js";
+import { ViewerMap } from "./map.js";
+import { agenciesByCountry, clearGaugeList, fillGauges, fillRegions, markRegions, showAgency } from "./panel.js";
 import { popupElement, riskSummary } from "./impact.js";
 import { chosenLayer, siteChoices } from "./layers.js";
-import { basinsOf, cycleTime, fetchJson, fetchOk, loadCycle, loadCycleAt, outputsBase, withoutCountry } from "./outputs.js";
+import { basinsOf, cycleTime, fetchJson, fetchText, loadCycle, loadCycleAt, outputsBase, withoutCountry } from "./outputs.js";
 import { loadRaster, rasterBounds } from "./raster.js";
 import { loadStatus, statusCard } from "./status.js";
 import { HOURS_BACK, clampOffset, shiftCycle, timeLabel } from "./timeline.js";
@@ -184,23 +184,39 @@ function setAnnouncements() {
 }
 
 /**
- * Play through the kept cycles up to the latest, or stop playing.
+ * Set the playing state and show it on the play button.
+ * @param {HTMLButtonElement} button
+ * @param {boolean} on
+ */
+function setPlaying(button, on) {
+  playing = on;
+  button.setAttribute("aria-pressed", String(on));
+  button.setAttribute("aria-label", on ? "Pause" : "Play");
+  button.title = on ? "Pause" : "Play";
+  setAnnouncements();
+}
+
+/**
+ * Step through the kept cycles up to the latest while playing.
  * Each step waits for its map to draw.
  * @param {HTMLButtonElement} button
  */
-async function togglePlay(button) {
-  playing = !playing;
-  button.setAttribute("aria-pressed", String(playing));
-  button.setAttribute("aria-label", playing ? "Pause" : "Play");
-  button.title = playing ? "Pause" : "Play";
-  setAnnouncements();
-  if (!playing) return;
+async function playCycles(button) {
   if (offset === 0) await setOffset(-HOURS_BACK);
   while (playing && offset < 0) {
     await new Promise((resolve) => setTimeout(resolve, PLAY_STEP_MS / speed));
     if (playing) await setOffset(offset + 1);
   }
-  if (playing) togglePlay(button);
+  if (playing) setPlaying(button, false);
+}
+
+/**
+ * Start or stop playing through the kept cycles.
+ * @param {HTMLButtonElement} button
+ */
+function togglePlay(button) {
+  setPlaying(button, !playing);
+  if (playing) playCycles(button);
 }
 
 /**
@@ -393,18 +409,19 @@ async function showGauges(cycle) {
   const token = ++gaugeToken;
   const list = document.getElementById("gauge-buttons");
   viewer.clearGauges();
-  fillGauges(list, [], gaugeLabel, () => {});
+  clearGaugeList(list);
   if (!form.gauges.checked) return;
   const grids = gaugeFiles(cycle.paths);
   const grid = grids[form.basin.value] ? form.basin.value : Object.keys(grids)[0];
   if (!grid || !grids[grid].control) return;
   try {
-    const text = await (await fetchOk(`${cycle.root}/${grids[grid].control}`)).text();
+    const url = `${cycle.root}/${grids[grid].control}`;
+    const text = await cached(url, () => fetchText(url));
     if (token !== gaugeToken) return;
     const located = parseGauges(text).filter((g) => grids[grid].gauges[g.name]);
     const open = (gauge) => openHydrograph(cycle, gauge, grids[grid].gauges[gauge.name]);
     viewer.showGauges(located, open);
-    fillGauges(list, located, gaugeLabel, open);
+    fillGauges(list, located, open);
   } catch (error) {
     if (token === gaugeToken) showError(error);
   }
@@ -418,7 +435,10 @@ async function showGauges(cycle) {
  * @returns {Promise<{stats: object[], members: number}>}
  */
 async function runStats(root, paths) {
-  const results = await Promise.allSettled(paths.map(async (path) => parseSeries(await (await fetchOk(`${root}/${path}`)).text())));
+  const results = await Promise.allSettled(paths.map(async (path) => {
+    const url = `${root}/${path}`;
+    return parseSeries(await cached(url, () => fetchText(url)));
+  }));
   const members = results.filter((r) => r.status === "fulfilled" && r.value.length).map((r) => r.value);
   return { stats: ensembleStats(members), members: members.length };
 }
@@ -516,6 +536,8 @@ function refresh() {
  */
 function start() {
   fillRegions(regions, COUNTRIES);
+  slider.min = String(-HOURS_BACK);
+  applyOpacity();
   setOptions(form.depth, FLOOD_DEPTHS_CM.map((d) => ({ value: String(d), label: `${d} cm` })));
   filter.addEventListener("input", () => filesCycle && showFiles(filesCycle));
   form.opacity.addEventListener("input", applyOpacity);

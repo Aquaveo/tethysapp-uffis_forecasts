@@ -8,7 +8,7 @@
 /** Precipitation runs that write gauge series, in time order. */
 export const RUNS = ["stream_sat", "scampr", "stormlab"];
 
-const SERIES_FILE = /^([^/]+)\/(stream_sat|scampr|stormlab)\/[^/]+\/ts\.(.+?)\.crest\.[\d.]+\.csv$/;
+const SERIES_FILE = new RegExp(`^([^/]+)/(${RUNS.join("|")})/[^/]+/ts\\.(.+?)\\.crest\\.[\\d.]+\\.csv$`);
 const CONTROL_FILE = /\/WA_[^/]+\.txt$/;
 const GAUGE_LINE = /^\[Gauge ([^\]]+)\]\s+lon=(-?[\d.]+)\s+lat=(-?[\d.]+)/;
 
@@ -32,6 +32,16 @@ export function gaugeFiles(paths) {
     grids[grid].control = paths.find((p) => p.startsWith(`${grid}/`) && CONTROL_FILE.test(p));
   }
   return grids;
+}
+
+/**
+ * A gauge's display name, from its EF5 name.
+ * @param {string} name e.g. cuenca_villalobos_out
+ * @returns {string}
+ */
+export function gaugeLabel(name) {
+  const words = name.replaceAll("_", " ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
 /**

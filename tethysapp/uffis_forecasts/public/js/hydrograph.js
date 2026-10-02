@@ -106,6 +106,18 @@ function node(tag, attributes) {
 }
 
 /**
+ * Create an SVG text element.
+ * @param {Record<string, string|number>} attributes
+ * @param {string} text
+ * @returns {SVGElement}
+ */
+function textNode(attributes, text) {
+  const label = node("text", attributes);
+  label.textContent = text;
+  return label;
+}
+
+/**
  * Draw the hydrograph for a gauge.
  * @param {{run: string, stats: {time: number, low: number, median: number, high: number}[]}[]} runs
  * @param {number} cycle cycle start, epoch ms
@@ -123,19 +135,13 @@ export function hydrographSvg(runs, cycle, { width, height }) {
 
   for (const v of yTicks) {
     svg.append(node("line", { x1: MARGIN.left, x2: width - MARGIN.right, y1: y(v), y2: y(v), class: "grid" }));
-    const label = node("text", { x: MARGIN.left - 6, y: y(v) + 4, "text-anchor": "end", class: "tick" });
-    label.textContent = v.toLocaleString("en");
-    svg.append(label);
+    svg.append(textNode({ x: MARGIN.left - 6, y: y(v) + 4, "text-anchor": "end", class: "tick" }, v.toLocaleString("en")));
   }
   for (const t of timeTicks(start, end, 6)) {
     svg.append(node("line", { x1: x(t), x2: x(t), y1: MARGIN.top, y2: height - MARGIN.bottom, class: "grid" }));
-    const label = node("text", { x: x(t), y: height - MARGIN.bottom + 14, "text-anchor": "middle", class: "tick" });
-    label.textContent = TIME_FORMAT.format(t);
-    svg.append(label);
+    svg.append(textNode({ x: x(t), y: height - MARGIN.bottom + 14, "text-anchor": "middle", class: "tick" }, TIME_FORMAT.format(t)));
     if (new Date(t).getUTCHours() === 0) {
-      const day = node("text", { x: x(t), y: height - MARGIN.bottom + 27, "text-anchor": "middle", class: "tick day" });
-      day.textContent = DAY_FORMAT.format(t);
-      svg.append(day);
+      svg.append(textNode({ x: x(t), y: height - MARGIN.bottom + 27, "text-anchor": "middle", class: "tick day" }, DAY_FORMAT.format(t)));
     }
   }
   for (const { run, stats } of runs) {
