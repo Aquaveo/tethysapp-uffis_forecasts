@@ -10,7 +10,8 @@
 export const COUNTRIES = [
   { key: "guatemala", name: "Guatemala", extent: [[13.7, -92.3], [17.9, -88.2]] },
   { key: "haiti", name: "Haiti", extent: [[18.0, -74.5], [20.1, -71.6]] },
-  { key: "barbados", name: "Barbados", extent: [[13.03, -59.66], [13.34, -59.41]] },
+  // Paused at Barbados request
+  // { key: "barbados", name: "Barbados", extent: [[13.03, -59.66], [13.34, -59.41]] },
   { key: "antigua", name: "Antigua and Barbuda", extent: [[16.95, -61.95], [17.75, -61.65]] },
   { key: "comoros", name: "Comoros", extent: [[-12.45, 43.2], [-11.35, 44.55]] },
 ];

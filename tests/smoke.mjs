@@ -257,7 +257,7 @@ async function checkCountryZoom(evaluate) {
  * @param {(expression: string) => Promise<any>} evaluate
  */
 async function checkOutage(evaluate) {
-  await waitFor(evaluate, 'document.querySelectorAll("#regions .chip.error").length === 5', "five failed region chips");
+  await waitFor(evaluate, 'document.querySelectorAll("#regions .chip.error").length === 4', "four failed region chips");
   await waitFor(evaluate, 'document.querySelector("#status .card")?.textContent.includes("No outputs found")', "failed status card");
   await waitFor(evaluate, 'document.getElementById("info").textContent.startsWith("Could not load this layer")', "map error line");
 }
