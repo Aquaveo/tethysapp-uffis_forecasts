@@ -3,6 +3,7 @@
  * Uses the Leaflet global (L) loaded by the page.
  */
 
+import { SMALL_SCREEN } from "./config.js";
 import { element } from "./dom.js";
 import { gaugeLabel } from "./gauges.js";
 
@@ -33,8 +34,13 @@ export class ViewerMap {
     this.gauges = null;
     this.map.createPane("gauges").style.zIndex = 650;
     this.addHomeButton();
+    this.legendOpen = !window.matchMedia(SMALL_SCREEN).matches;
     this.legend = L.control({ position: "bottomleft" });
-    this.legend.onAdd = () => element("div", "legend");
+    this.legend.onAdd = () => {
+      const box = element("div", "legend");
+      L.DomEvent.disableClickPropagation(box);
+      return box;
+    };
     this.legend.addTo(this.map);
   }
 
@@ -182,6 +188,24 @@ export class ViewerMap {
     this.gauges = null;
   }
 
+  /**
+   * The legend title as a button that folds the legend to a colour ramp.
+   * @param {string} title
+   * @returns {HTMLButtonElement}
+   */
+  legendHead(title) {
+    const head = element("button", "legend-head");
+    head.type = "button";
+    head.setAttribute("aria-expanded", String(this.legendOpen));
+    head.append(element("strong", "", title));
+    head.addEventListener("click", () => {
+      this.legendOpen = !this.legendOpen;
+      head.setAttribute("aria-expanded", String(this.legendOpen));
+      this.legend.getContainer().classList.toggle("compact", !this.legendOpen);
+    });
+    return head;
+  }
+
   /** Remove the vector layer, if any. */
   clearFeatures() {
     if (this.features) this.features.remove();
@@ -198,10 +222,12 @@ export class ViewerMap {
     box.replaceChildren();
     box.hidden = !legend;
     if (!legend) return;
-    box.append(element("strong", "", `${legend.title} (${legend.unit})`));
+    box.classList.toggle("compact", !this.legendOpen);
+    box.append(this.legendHead(`${legend.title} (${legend.unit})`));
     if (note) box.append(element("div", "note", note));
     legend.colors.forEach((color, i) => {
       const row = element("div", "row");
+      row.title = legend.labels[i];
       const swatch = element("span", "swatch");
       swatch.style.background = color;
       row.append(swatch, element("span", "", legend.labels[i]));

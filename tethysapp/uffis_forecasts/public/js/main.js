@@ -2,7 +2,7 @@
  * Page entry point: wires the control panel, the files sheet and the map.
  */
 
-import { COUNTRIES, FLOOD_DEPTHS_CM, IMPACT_LEGEND, LEGENDS } from "./config.js";
+import { COUNTRIES, FLOOD_DEPTHS_CM, IMPACT_LEGEND, LEGENDS, SMALL_SCREEN } from "./config.js";
 import { accessElement, accessUrls } from "./access.js";
 import { classifyCells, drawnCount, paintCells } from "./colors.js";
 import { element, setOptions } from "./dom.js";
@@ -83,7 +83,18 @@ function togglePanel(button) {
   const panel = document.getElementById("panel");
   panel.hidden = !panel.hidden;
   button.setAttribute("aria-expanded", String(!panel.hidden));
-  button.textContent = panel.hidden ? "Show controls" : "Hide controls";
+  button.querySelector(".toggle-text").textContent = panel.hidden ? "Show controls" : "Hide controls";
+}
+
+/**
+ * Keep --dock equal to the time bar's height, so map corners sit above it.
+ */
+function trackDockHeight() {
+  const root = document.getElementById("uffis-viewer");
+  const bar = root.querySelector(".cycle-bar");
+  const update = () => root.style.setProperty("--dock", `${bar.offsetHeight}px`);
+  new ResizeObserver(update).observe(bar);
+  update();
 }
 
 /**
@@ -617,7 +628,8 @@ function start() {
   });
   toggleControls();
   updateTimeButtons();
-  if (window.matchMedia("(max-width: 640px)").matches) togglePanel(toggle);
+  if (window.matchMedia(SMALL_SCREEN).matches) togglePanel(toggle);
+  trackDockHeight();
   refresh();
   setInterval(refresh, REFRESH_MS);
 }

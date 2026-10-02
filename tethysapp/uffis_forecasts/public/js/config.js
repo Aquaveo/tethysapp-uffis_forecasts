@@ -68,3 +68,6 @@ export const IMPACT_LEGEND = {
 
 /** Depth thresholds, in cm, of the flood probability rasters. */
 export const FLOOD_DEPTHS_CM = [10, 30, 70, 100];
+
+/** Phones and short landscape screens. */
+export const SMALL_SCREEN = "(max-width: 640px), (max-height: 500px)";

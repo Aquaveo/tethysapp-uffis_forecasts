@@ -102,7 +102,8 @@
 }
 
 .uffis-viewer .float-btn:focus-visible, .uffis-viewer .panel-btn:focus-visible { outline: 3px solid var(--v-select); outline-offset: 2px; }
-.uffis-viewer .toggle { top: 12px; right: 12px; }
+.uffis-viewer .toggle { top: 12px; right: 12px; display: flex; align-items: center; gap: 8px; }
+.uffis-viewer .toggle-icon { display: none; flex: none; }
 
 /* Control panel */
 .uffis-viewer .panel {
@@ -433,6 +434,43 @@
 }
 
 .uffis-viewer .legend .note { color: var(--v-muted); margin-bottom: 4px; }
+
+.uffis-viewer .legend-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+/* Chevron shows fold state */
+.uffis-viewer .legend-head::after {
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin-left: auto;
+  border: solid var(--v-muted);
+  border-width: 0 1.5px 1.5px 0;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 0.15s var(--v-ease);
+}
+
+.uffis-viewer .legend-head[aria-expanded="false"]::after { transform: translateY(1px) rotate(-135deg); }
+.uffis-viewer .legend-head:focus-visible { outline: 3px solid var(--v-select); outline-offset: 2px; border-radius: 4px; }
+
+/* Folded: one colour ramp */
+.uffis-viewer .legend.compact .note, .uffis-viewer .legend.compact .row span:not(.swatch) { display: none; }
+.uffis-viewer .legend.compact .row { display: inline-flex; margin-top: 6px; }
+.uffis-viewer .legend.compact .swatch { width: 22px; height: 10px; border-radius: 0; border-width: 1px 0; }
+.uffis-viewer .legend.compact .row:first-of-type .swatch { border-left-width: 1px; border-radius: 3px 0 0 3px; }
+.uffis-viewer .legend.compact .row:last-child .swatch { border-right-width: 1px; border-radius: 0 3px 3px 0; }
 .uffis-viewer .legend .row, .uffis-viewer .popup .row { flex-wrap: nowrap; margin: 0; }
 .uffis-viewer .legend .row > *, .uffis-viewer .popup .row > * { width: auto; max-width: none; padding: 0; margin: 0; }
 .uffis-viewer .legend .row { display: flex; align-items: center; gap: 8px; }
@@ -562,7 +600,7 @@
   .uffis-viewer .panel[hidden] ~ .cycle-bar, .uffis-viewer .panel[hidden] ~ .hydro { right: 12px; }
 }
 
-/* Phones: panel becomes a bottom sheet */
+/* Phones: bottom dock, sheet panel */
 @media (max-width: 640px) {
   .uffis-viewer .panel {
     top: auto;
@@ -570,30 +608,127 @@
     bottom: 8px;
     left: 8px;
     width: auto;
-    max-height: 60%;
+    max-height: 62%;
+    background: var(--v-surface);
+    z-index: 900;
   }
 
-  .uffis-viewer .panel:not([hidden]) ~ .cycle-bar { display: none; }
-  .uffis-viewer .toggle { padding: 7px 10px; font-size: 0.8rem; }
+  .uffis-viewer .toggle { padding: 0; width: 44px; height: 44px; justify-content: center; }
+  .uffis-viewer .toggle-icon { display: block; }
+  .uffis-viewer .toggle-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* Two rows in thumb reach */
   .uffis-viewer .cycle-bar {
-    top: 72px;
-    bottom: auto;
-    left: 56px;
+    top: auto;
+    bottom: 8px;
+    left: 8px;
     right: 8px;
     max-width: none;
     margin: 0;
-    padding: 6px 10px 8px;
-    font-size: 0.75rem;
+    padding: 8px 10px calc(10px + env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-columns: 44px 44px minmax(0, 1fr) 44px auto;
+    grid-template-areas:
+      "label label label label speed"
+      "play prev slider next now";
+    align-items: center;
+    gap: 6px;
   }
-  .uffis-viewer .time-label { margin-bottom: 4px; font-size: 0.85rem; }
+
+  .uffis-viewer .time-controls { display: contents; }
+  .uffis-viewer .time-label { grid-area: label; margin: 0; text-align: left; font-size: 0.92rem; line-height: 1.25; }
+  .uffis-viewer #cycle-speed { grid-area: speed; }
+  .uffis-viewer #cycle-play { grid-area: play; width: auto; }
+  .uffis-viewer [data-step="-1"] { grid-area: prev; }
+  .uffis-viewer #cycle-slider { grid-area: slider; min-width: 0; width: 100%; }
+  .uffis-viewer [data-step="1"] { grid-area: next; }
+  .uffis-viewer #cycle-now { grid-area: now; }
+  .uffis-viewer .step { padding-inline: 6px; }
   .uffis-viewer .wide-only { display: none; }
-  .uffis-viewer .layer-info { max-width: 62vw; }
-  .uffis-viewer .hydro { left: 8px; right: 8px; bottom: 8px; max-width: none; margin: 0; z-index: 600; }
+  .uffis-viewer .panel:not([hidden]) ~ .cycle-bar { display: none; }
   .uffis-viewer .panel[hidden] ~ .cycle-bar, .uffis-viewer .panel[hidden] ~ .hydro { right: 8px; }
-  .uffis-viewer .legend { padding: 6px 8px; font-size: 0.75rem; line-height: 1.35; }
+
+  /* Corners clear the dock */
+  .uffis-viewer .leaflet-bottom.leaflet-left, .uffis-viewer .leaflet-bottom.leaflet-right { bottom: calc(var(--dock, 0px) + 12px); }
+  .uffis-viewer .leaflet-bottom.leaflet-left .leaflet-control { margin-left: 8px; }
+  .uffis-viewer .layer-info { max-width: calc(100vw - 16px); margin-bottom: 6px; }
+  .uffis-viewer .legend { max-width: calc(100vw - 16px); padding: 8px 10px; font-size: 0.75rem; line-height: 1.35; }
   .uffis-viewer .legend .note { display: none; }
   .uffis-viewer .legend .swatch { width: 12px; height: 12px; }
+  .uffis-viewer .legend.compact .swatch { width: 20px; height: 10px; }
+
+  .uffis-viewer .hydro {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    max-width: none;
+    max-height: 72%;
+    margin: 0;
+    overflow-y: auto;
+    z-index: 600;
+  }
+
   .uffis-viewer .access dl { grid-template-columns: 1fr; }
+}
+
+/* Short landscape: one-row dock, side sheet */
+@media (max-height: 500px) {
+  .uffis-viewer .panel { top: 64px; bottom: 8px; right: 8px; left: auto; width: 290px; max-height: none; }
+  .uffis-viewer .panel:not([hidden]) ~ .cycle-bar { display: none; }
+
+  .uffis-viewer .cycle-bar {
+    top: auto;
+    bottom: 8px;
+    left: 8px;
+    right: 8px;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 6px 10px calc(6px + env(safe-area-inset-bottom));
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .uffis-viewer .time-label { flex: none; margin: 0; font-size: 0.9rem; white-space: nowrap; }
+  .uffis-viewer .time-controls { display: flex; flex: 1; min-width: 0; }
+  .uffis-viewer #cycle-play { width: 38px; }
+  .uffis-viewer .wide-only { display: none; }
+
+  .uffis-viewer .leaflet-bottom.leaflet-left, .uffis-viewer .leaflet-bottom.leaflet-right { bottom: calc(var(--dock, 0px) + 12px); }
+  .uffis-viewer .legend { padding: 8px 10px; font-size: 0.75rem; line-height: 1.35; }
+  .uffis-viewer .legend .note { display: none; }
+  .uffis-viewer .legend .swatch { width: 12px; height: 12px; }
+  .uffis-viewer .legend.compact .swatch { width: 20px; height: 10px; }
+
+  .uffis-viewer .hydro {
+    top: auto;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    max-width: 600px;
+    max-height: calc(100% - 72px);
+    margin: 0 auto;
+    overflow-y: auto;
+    z-index: 600;
+  }
+}
+
+/* Small landscape: drop hour steps */
+@media (max-height: 500px) and (max-width: 640px) {
+  .uffis-viewer [data-step] { display: none; }
+  .uffis-viewer .time-label { font-size: 0.82rem; }
+}
+
+/* Touch, short: pinch replaces zoom */
+@media (pointer: coarse) and (max-height: 500px) {
+  .uffis-viewer .leaflet-control-zoom { display: none; }
 }
 
 /* Touch: 44px targets */
@@ -606,12 +741,17 @@
   .uffis-viewer .home button { width: 44px; height: 44px; line-height: 44px; }
   .uffis-viewer .leaflet-touch .leaflet-bar a { width: 44px; height: 44px; line-height: 44px; }
   .uffis-viewer input[type="range"] { min-height: 44px; }
+  .uffis-viewer select { font-size: 16px; }
+  .uffis-viewer .legend-head { min-height: 32px; }
+}
+
+@media (pointer: coarse) and (min-width: 641px) and (min-height: 501px) {
   .uffis-viewer .panel { top: 76px; }
   .uffis-viewer .cycle-bar { left: 68px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .uffis-viewer .option span, .uffis-viewer .chip span, .uffis-viewer .layer-info { transition: none; }
+  .uffis-viewer .option span, .uffis-viewer .chip span, .uffis-viewer .layer-info, .uffis-viewer .legend-head::after { transition: none; }
   .uffis-viewer .spinner { animation: none; border-top-color: var(--v-console-line); }
   .uffis-viewer .step:active { transform: none; }
 }

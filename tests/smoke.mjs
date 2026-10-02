@@ -29,7 +29,7 @@ async function viewerPage(outputs) {
   const templates = join(APP, "templates", "uffis_forecasts");
   const assets = await readFile(join(templates, "assets.html"), "utf8");
   const viewer = await readFile(join(templates, "viewer.html"), "utf8");
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8">${assets}</head><body>${viewer.replaceAll("{{ outputs_base }}", outputs)}${AGENCIES}</body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">${assets}</head><body>${viewer.replaceAll("{{ outputs_base }}", outputs)}${AGENCIES}</body></html>`;
 }
 
 /**
@@ -89,7 +89,7 @@ function launchChrome() {
  * Open a page and return a helper that evaluates expressions in it.
  * @param {string} devtools DevTools HTTP address
  * @param {string} url page to open
- * @returns {Promise<{evaluate: (expression: string) => Promise<any>, close: () => void}>}
+ * @returns {Promise<{evaluate: (expression: string) => Promise<any>, send: (method: string, params?: object) => Promise<any>, close: () => void}>}
  */
 async function openPage(devtools, url) {
   const target = await (await fetch(`${devtools}/json/new?${url}`, { method: "PUT" })).json();
@@ -102,11 +102,12 @@ async function openPage(devtools, url) {
     pending.get(message.id)?.(message.result);
     pending.delete(message.id);
   });
-  const evaluate = (expression) => new Promise((resolve) => {
-    pending.set(++id, (result) => resolve(result?.result?.value));
-    socket.send(JSON.stringify({ id, method: "Runtime.evaluate", params: { expression, returnByValue: true } }));
+  const send = (method, params = {}) => new Promise((resolve) => {
+    pending.set(++id, resolve);
+    socket.send(JSON.stringify({ id, method, params }));
   });
-  return { evaluate, close: () => socket.close() };
+  const evaluate = async (expression) => (await send("Runtime.evaluate", { expression, returnByValue: true }))?.result?.value;
+  return { evaluate, send, close: () => socket.close() };
 }
 
 /**
@@ -233,6 +234,31 @@ async function checkOutage(evaluate) {
   await waitFor(evaluate, 'document.getElementById("info").textContent.startsWith("Could not load this layer")', "map error line");
 }
 
+/**
+ * On a phone the dock fits at the bottom and nothing overlaps it.
+ * @param {{evaluate: Function, send: Function}} page
+ */
+async function checkPhone({ evaluate, send }) {
+  await send("Emulation.setDeviceMetricsOverride", { width: 320, height: 640, deviceScaleFactor: 2, mobile: true });
+  await evaluate("window.beforeReload = true");
+  await send("Page.reload");
+  await waitFor(evaluate, '!window.beforeReload && document.querySelector(".legend .legend-head")', "phone legend");
+  const layout = JSON.parse(await evaluate(`(() => {
+    const bar = document.querySelector(".cycle-bar").getBoundingClientRect();
+    const legend = document.querySelector(".legend").getBoundingClientRect();
+    return JSON.stringify({
+      panelHidden: document.getElementById("panel").hidden,
+      compact: document.querySelector(".legend").classList.contains("compact"),
+      pageFits: document.documentElement.scrollWidth <= innerWidth,
+      barFits: bar.left >= 0 && bar.right <= innerWidth,
+      docked: innerHeight - bar.bottom <= 16,
+      clear: legend.bottom <= bar.top,
+    });
+  })()`));
+  const broken = Object.entries(layout).filter(([, ok]) => !ok).map(([name]) => name);
+  if (broken.length) throw new Error(`phone layout: ${broken.join(", ")}`);
+}
+
 const { server, port } = await serve();
 const { chrome, devtools } = await launchChrome();
 let failed = false;
@@ -240,10 +266,13 @@ try {
   const page = await openPage(devtools, `http://127.0.0.1:${port}/`);
   await check(page.evaluate);
   page.close();
+  const phone = await openPage(devtools, `http://127.0.0.1:${port}/`);
+  await checkPhone(phone);
+  phone.close();
   const down = await openPage(devtools, `http://127.0.0.1:${port}/?down=1`);
   await checkOutage(down.evaluate);
   down.close();
-  console.log("viewer smoke test ok: status, rainfall, cycle slider, country zoom, gauge hydrograph, opacity, files sheet, flood and impact maps, file tree, outage");
+  console.log("viewer smoke test ok: status, rainfall, cycle slider, country zoom, gauge hydrograph, opacity, files sheet, flood and impact maps, file tree, phone layout, outage");
 } catch (error) {
   failed = true;
   console.error(`viewer smoke test failed: ${error.message}`);
