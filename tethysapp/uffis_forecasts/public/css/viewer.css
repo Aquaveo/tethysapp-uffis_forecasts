@@ -116,8 +116,6 @@
 
 .uffis-viewer .panel-title { margin: 0 0 8px; font-size: 1.1rem; font-weight: 700; text-align: center; }
 .uffis-viewer .panel-status .card { margin-bottom: 4px; }
-.uffis-viewer .agency { margin: 6px 2px 2px; color: var(--v-muted); font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.uffis-viewer .agency a { color: var(--v-select); font-weight: 600; }
 .uffis-viewer .controls { display: grid; gap: 4px; margin: 0; }
 .uffis-viewer fieldset { margin: 6px 0 0; padding: 0; border: 0; min-width: 0; }
 

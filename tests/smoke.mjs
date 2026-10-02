@@ -16,7 +16,6 @@ const APP = join(ROOT, "tethysapp", "uffis_forecasts");
 const FIXTURES = join(ROOT, "tests", "fixtures");
 const STATIC = "/static/uffis_forecasts/";
 const DOWN_BASE = "http://127.0.0.1:9/outputs";
-const AGENCIES = '<script type="application/json" id="uffis-agencies">[{"country": "guatemala", "short": "INSIVUMEH", "name": "Instituto Nacional", "host": "insivumeh.uffis.org"}]</script>';
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".tif": "image/tiff" };
 const TIMEOUT_MS = 30000;
 
@@ -38,7 +37,7 @@ async function viewerPage(outputs) {
   const templates = join(APP, "templates", "uffis_forecasts");
   const assets = await readFile(join(templates, "assets.html"), "utf8");
   const viewer = await readFile(join(templates, "viewer.html"), "utf8");
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">${assets}</head><body>${viewer.replaceAll("{{ outputs_base }}", outputs)}${AGENCIES}</body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">${assets}</head><body>${viewer.replaceAll("{{ outputs_base }}", outputs)}</body></html>`;
 }
 
 /**
@@ -149,8 +148,6 @@ async function check(evaluate, send) {
   if (loaderRole !== "status") throw new Error(`map loader role: ${loaderRole}`);
   const region = await evaluate('document.querySelector("#regions .chip").title');
   if (!region.startsWith("Guatemala, published")) throw new Error(`region note: ${region}`);
-  const agency = await evaluate('document.getElementById("agency").textContent + " " + document.querySelector("#agency a")?.href');
-  if (!agency.startsWith("Warnings: INSIVUMEH portal https://insivumeh.uffis.org")) throw new Error(`agency line: ${agency}`);
   await waitFor(evaluate, 'document.getElementById("info").textContent.includes("qpeaccum") && document.getElementById("info").textContent.includes(" 7 cells shown")', "rainfall map with 7 cells");
   await waitFor(evaluate, inViewer('(() => { const layers = viewer.map.getStyle().layers; const forecast = layers.findIndex((l) => l.id === "forecast"); return forecast >= 0 && forecast < layers.findIndex((l) => l.type === "symbol"); })()'), "forecast under the place names");
   await checkTimeline(evaluate);

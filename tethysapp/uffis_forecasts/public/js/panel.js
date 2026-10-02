@@ -79,33 +79,6 @@ export function markRegions(box, statuses, now) {
 }
 
 /**
- * Agencies the page lists, keyed by country, from the portal's JSON.
- * Empty when the page carries none.
- * @param {Document} doc
- * @returns {Record<string, {short: string, name: string, host: string}>}
- */
-export function agenciesByCountry(doc) {
-  const data = doc.getElementById("uffis-agencies");
-  const list = data ? JSON.parse(data.textContent) : [];
-  return Object.fromEntries(list.map((agency) => [agency.country, agency]));
-}
-
-/**
- * Fill the line that links a country to its warning service. The
- * panel title already names the country, so the line stays short.
- * @param {HTMLElement} line
- * @param {{short: string, name: string, host: string}|undefined} agency
- */
-export function showAgency(line, agency) {
-  line.hidden = !agency;
-  if (!agency) return;
-  const link = element("a", "", `${agency.short} portal`);
-  link.href = `https://${agency.host}`;
-  link.title = agency.name;
-  line.replaceChildren("Warnings: ", link);
-}
-
-/**
  * List gauges as buttons, so hydrographs open without the map.
  * @param {HTMLElement} box
  * @param {{name: string}[]} gauges
