@@ -7,11 +7,13 @@ import { accessElement, accessUrls } from "./access.js";
 import { classifyCells, drawnCount, paintCells } from "./colors.js";
 import { element, setOptions } from "./dom.js";
 import { buildTree, filterFiles, folderElement, formatBytes } from "./files.js";
-import { ViewerMap } from "./map.js";
+import { RUNS, ensembleStats, gaugeFiles, parseGauges, parseSeries } from "./gauges.js";
+import { RUN_STYLE, hydrographSvg } from "./hydrograph.js";
+import { ViewerMap, gaugeLabel } from "./map.js";
 import { fillRegions, markRegions } from "./panel.js";
 import { popupElement, riskSummary } from "./impact.js";
 import { chosenLayer, siteChoices } from "./layers.js";
-import { basinsOf, cycleTime, fetchJson, loadCycle, outputsBase, withoutCountry } from "./outputs.js";
+import { basinsOf, cycleTime, fetchJson, fetchOk, loadCycle, outputsBase, withoutCountry } from "./outputs.js";
 import { loadRaster, rasterBounds } from "./raster.js";
 import { loadStatus, statusCard } from "./status.js";
 
@@ -27,6 +29,8 @@ let drawToken = 0;
 let fittedKey = "";
 let filesCycle = null;
 let statuses = [];
+let gaugeToken = 0;
+const HYDRO_SIZE = { width: 520, height: 220 };
 
 /**
  * Reload every country's status, colour the region chips and stamp
@@ -243,6 +247,82 @@ function showError(error) {
 }
 
 /**
+ * Put the selected grid's gauges on the map, when gauges are switched
+ * on and the cycle has series for them.
+ * @param {{paths: string[], root: string}} cycle
+ */
+async function showGauges(cycle) {
+  const token = ++gaugeToken;
+  viewer.clearGauges();
+  if (!form.gauges.checked) return;
+  const grids = gaugeFiles(cycle.paths);
+  const grid = grids[form.basin.value] ? form.basin.value : Object.keys(grids)[0];
+  if (!grid || !grids[grid].control) return;
+  try {
+    const text = await (await fetchOk(`${cycle.root}/${grids[grid].control}`)).text();
+    if (token !== gaugeToken) return;
+    const located = parseGauges(text).filter((g) => grids[grid].gauges[g.name]);
+    viewer.showGauges(located, (gauge) => openHydrograph(cycle, gauge, grids[grid].gauges[gauge.name]));
+  } catch (error) {
+    if (token === gaugeToken) showError(error);
+  }
+}
+
+/**
+ * Load every member's series of one run and reduce them to statistics.
+ * Unreadable members are left out.
+ * @param {string} root cycle URL
+ * @param {string[]} paths the run's series files
+ * @returns {Promise<{stats: object[], members: number}>}
+ */
+async function runStats(root, paths) {
+  const results = await Promise.allSettled(paths.map(async (path) => parseSeries(await (await fetchOk(`${root}/${path}`)).text())));
+  const members = results.filter((r) => r.status === "fulfilled" && r.value.length).map((r) => r.value);
+  return { stats: ensembleStats(members), members: members.length };
+}
+
+/**
+ * Open the hydrograph panel for a gauge and draw its runs.
+ * @param {{latest: object, root: string}} cycle
+ * @param {{name: string}} gauge
+ * @param {Record<string, string[]>} files series files by run
+ */
+async function openHydrograph(cycle, gauge, files) {
+  const panel = document.getElementById("hydrograph");
+  const chart = document.getElementById("hydro-chart");
+  const legend = document.getElementById("hydro-legend");
+  panel.hidden = false;
+  panel.dataset.gauge = gauge.name;
+  document.getElementById("hydro-title").textContent = gaugeLabel(gauge.name);
+  chart.textContent = "Loading…";
+  legend.replaceChildren();
+  const loaded = await Promise.all(RUNS.filter((r) => files[r]).map(async (run) => ({ run, ...await runStats(cycle.root, files[run]) })));
+  const runs = loaded.filter((r) => r.stats.length);
+  if (panel.dataset.gauge !== gauge.name) return;
+  if (!runs.length) {
+    chart.textContent = "No readable series for this gauge.";
+    return;
+  }
+  chart.replaceChildren(hydrographSvg(runs, cycleTime(cycle.latest.cycle).getTime(), HYDRO_SIZE));
+  legend.replaceChildren(...runs.map(({ run, members }) => {
+    const item = element("li");
+    const swatch = element("span", "swatch");
+    swatch.style.background = RUN_STYLE[run].color;
+    item.append(swatch, `${RUN_STYLE[run].label}, ${members} members`);
+    return item;
+  }));
+}
+
+/**
+ * Hide the hydrograph panel.
+ */
+function closeHydrograph() {
+  const panel = document.getElementById("hydrograph");
+  panel.hidden = true;
+  delete panel.dataset.gauge;
+}
+
+/**
  * React to a country change: new cycle, new options, redraw.
  * Gives up when another country was picked meanwhile.
  */
@@ -254,6 +334,7 @@ async function changeCountry() {
     fillCycleOptions(cycle);
     showAccess(cycle);
     showFiles(cycle);
+    showGauges(cycle);
   } catch (error) {
     if (country === form.country.value) showError(error);
     return;
@@ -282,12 +363,18 @@ function start() {
   const toggle = document.getElementById("toggle-controls");
   toggle.addEventListener("click", () => togglePanel(toggle));
   document.getElementById("open-files").addEventListener("click", () => document.getElementById("files-panel").showModal());
+  document.getElementById("close-hydro").addEventListener("click", closeHydrograph);
   form.addEventListener("change", async (event) => {
     if (event.target.name === "opacity") return;
     if (event.target.name === "country") {
+      closeHydrograph();
       showSelectedStatus();
       changeCountry();
       return;
+    }
+    if (event.target.name === "gauges" || event.target.name === "basin") {
+      countryCycle(form.country.value).then(showGauges, showError);
+      if (event.target.name === "gauges") return;
     }
     if (event.target.name === "product") {
       try {

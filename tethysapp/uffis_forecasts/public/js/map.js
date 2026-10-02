@@ -22,6 +22,8 @@ export class ViewerMap {
     this.features = null;
     this.opacity = 0.85;
     this.home = null;
+    this.gauges = null;
+    this.map.createPane("gauges").style.zIndex = 650;
     this.addHomeButton();
     this.legend = L.control({ position: "bottomleft" });
     this.legend.onAdd = () => element("div", "legend");
@@ -105,6 +107,25 @@ export class ViewerMap {
     if (fit) this.fit(this.features.getBounds());
   }
 
+  /**
+   * Show gauges as markers that call onSelect when clicked.
+   * @param {{name: string, lat: number, lon: number}[]} gauges
+   * @param {(gauge: {name: string, lat: number, lon: number}) => void} onSelect
+   */
+  showGauges(gauges, onSelect) {
+    this.clearGauges();
+    const markers = gauges.map((gauge) => L.circleMarker([gauge.lat, gauge.lon], {
+      pane: "gauges", radius: 7, weight: 2, color: "#111827", fillColor: "#22d3ee", fillOpacity: 1,
+    }).bindTooltip(gaugeLabel(gauge.name)).on("click", () => onSelect(gauge)));
+    this.gauges = L.layerGroup(markers).addTo(this.map);
+  }
+
+  /** Remove the gauge markers, if any. */
+  clearGauges() {
+    if (this.gauges) this.gauges.remove();
+    this.gauges = null;
+  }
+
   /** Remove the vector layer, if any. */
   clearFeatures() {
     if (this.features) this.features.remove();
@@ -131,4 +152,14 @@ export class ViewerMap {
       box.append(row);
     });
   }
+}
+
+/**
+ * A gauge's display name, from its EF5 name.
+ * @param {string} name e.g. cuenca_villalobos_out
+ * @returns {string}
+ */
+export function gaugeLabel(name) {
+  const words = name.replaceAll("_", " ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
 }

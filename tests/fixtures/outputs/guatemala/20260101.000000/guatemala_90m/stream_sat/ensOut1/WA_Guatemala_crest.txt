@@ -1,0 +1,2 @@
+[Gauge 0] cellx=1 celly=1 outputts=false
+[Gauge test_gauge] lon=-90.529 lat=14.4775 outputts=true

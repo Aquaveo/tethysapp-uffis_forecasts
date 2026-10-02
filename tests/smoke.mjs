@@ -133,7 +133,13 @@ async function check(evaluate) {
   const card = await waitFor(evaluate, 'document.querySelector("#status .card")?.textContent', "status cards");
   if (!card.includes("1 of 1 flood sites triggered")) throw new Error(`Guatemala card: ${card}`);
   await waitFor(evaluate, 'document.getElementById("info").textContent.includes("qpeaccum") && document.getElementById("info").textContent.includes(" 7 cells shown")', "rainfall map with 7 cells");
-  await waitFor(evaluate, 'document.getElementById("files-summary").textContent.startsWith("5 files")', "file tree with 5 files");
+  await waitFor(evaluate, 'document.getElementById("files-summary").textContent.startsWith("10 files")', "file tree with 10 files");
+  await waitFor(evaluate, 'document.querySelectorAll(".leaflet-gauges-pane path").length === 1', "one gauge marker");
+  await evaluate('document.querySelector(".leaflet-gauges-pane path").dispatchEvent(new MouseEvent("click", { bubbles: true }))');
+  await waitFor(evaluate, 'document.querySelectorAll("#hydro-chart path.median").length === 2 && document.getElementById("hydro-title").textContent === "Test gauge"', "hydrograph with two runs");
+  const legend = await evaluate('document.getElementById("hydro-legend").textContent');
+  if (!legend.includes("2 members")) throw new Error(`hydrograph legend: ${legend}`);
+  await evaluate('document.getElementById("close-hydro").click()');
   const access = await evaluate('document.getElementById("access").textContent');
   if (!access.includes("/outputs/guatemala/latest.json")) throw new Error(`data access box: ${access}`);
   await evaluate('(() => { const f = document.getElementById("file-filter"); f.value = "prob_depth"; f.dispatchEvent(new Event("input")); })()');
@@ -146,7 +152,7 @@ async function check(evaluate) {
   await evaluate('document.querySelector("input[name=product][value=flood]").click()');
   await waitFor(evaluate, 'document.getElementById("info").textContent.includes("prob_depth_ge_10cm") && document.getElementById("info").textContent.includes(" 5 cells shown")', "flood map with 5 cells");
   await evaluate('document.querySelector("input[name=product][value=impact]").click()');
-  await waitFor(evaluate, 'document.getElementById("info").textContent.startsWith("Buildings at risk: 1 high, 2 medium, 5 low. People at low risk or worse: 42.") && document.querySelectorAll("path.leaflet-interactive").length === 1', "impact view with one municipality");
+  await waitFor(evaluate, 'document.getElementById("info").textContent.startsWith("Buildings at risk: 1 high, 2 medium, 5 low. People at low risk or worse: 42.") && document.querySelectorAll(".leaflet-overlay-pane path.leaflet-interactive").length === 1', "impact view with one municipality");
 }
 
 /**
@@ -169,7 +175,7 @@ try {
   const down = await openPage(devtools, `http://127.0.0.1:${port}/?down=1`);
   await checkOutage(down.evaluate);
   down.close();
-  console.log("viewer smoke test ok: status, rainfall, opacity, files sheet, flood and impact maps, file tree, outage");
+  console.log("viewer smoke test ok: status, rainfall, gauge hydrograph, opacity, files sheet, flood and impact maps, file tree, outage");
 } catch (error) {
   failed = true;
   console.error(`viewer smoke test failed: ${error.message}`);

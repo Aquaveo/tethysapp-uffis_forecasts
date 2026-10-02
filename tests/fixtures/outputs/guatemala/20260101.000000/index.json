@@ -20,6 +20,26 @@
   {
    "path": "guatemala_90m/ibf/Guatemala_Test/ibf_summary.20260101.000000.json",
    "size": 168
+  },
+  {
+   "path": "guatemala_90m/stream_sat/ensOut1/WA_Guatemala_crest.txt",
+   "size": 98
+  },
+  {
+   "path": "guatemala_90m/stream_sat/ensOut1/ts.test_gauge.crest.20260101.000000.csv",
+   "size": 284
+  },
+  {
+   "path": "guatemala_90m/stream_sat/ensOut2/ts.test_gauge.crest.20260101.000000.csv",
+   "size": 284
+  },
+  {
+   "path": "guatemala_90m/stormlab/ensOut1_sl1/ts.test_gauge.crest.20260101.000000.csv",
+   "size": 444
+  },
+  {
+   "path": "guatemala_90m/stormlab/ensOut2_sl1/ts.test_gauge.crest.20260101.000000.csv",
+   "size": 444
   }
  ]
 }

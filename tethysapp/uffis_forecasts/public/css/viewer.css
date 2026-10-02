@@ -163,6 +163,45 @@
   border-radius: 6px;
 }
 
+.uffis-viewer .check { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-weight: 600; cursor: pointer; }
+.uffis-viewer .check input { width: 16px; height: 16px; accent-color: var(--accent); }
+
+/* Hydrograph panel */
+.uffis-viewer .hydro {
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  width: max(320px, min(560px, calc(100% - 560px)));
+  padding: 10px 14px 12px;
+  background: var(--surface);
+}
+
+.uffis-viewer .hydro-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.uffis-viewer .hydro-head h2 { margin: 0; font-size: 1rem; }
+
+.uffis-viewer .hydro-head button {
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.uffis-viewer .hydro-chart { min-height: 60px; margin-top: 6px; }
+.uffis-viewer .hydrograph { display: block; width: 100%; height: auto; }
+.uffis-viewer .hydrograph .grid { stroke: #e5e7eb; stroke-width: 1; }
+.uffis-viewer .hydrograph .tick { fill: var(--muted); font-size: 10px; }
+.uffis-viewer .hydrograph .day { font-weight: 600; }
+.uffis-viewer .hydrograph .cycle { stroke: #111827; stroke-width: 1.5; stroke-dasharray: 4 3; }
+.uffis-viewer .hydro-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 6px 0 0; padding: 0; list-style: none; font-size: 0.78rem; }
+.uffis-viewer .hydro-legend li { display: flex; align-items: center; gap: 6px; }
+.uffis-viewer .hydro-legend .swatch { width: 14px; height: 4px; border-radius: 2px; }
+.uffis-viewer .hydro-note { margin: 6px 0 0; color: var(--muted); font-size: 0.72rem; }
+.uffis-viewer .hydro:not([hidden]) ~ .cycle-bar { display: none; }
+
 .uffis-viewer .opacity { display: grid; gap: 4px; margin-top: 8px; font-weight: 600; }
 .uffis-viewer .opacity span { display: flex; justify-content: space-between; }
 .uffis-viewer .opacity output { color: var(--muted); font-weight: 400; }
@@ -385,6 +424,7 @@
     padding: 6px 10px;
     font-size: 0.75rem;
   }
+  .uffis-viewer .hydro { left: 8px; right: 8px; bottom: 8px; width: auto; transform: none; z-index: 600; }
   .uffis-viewer .legend { padding: 6px 8px; font-size: 0.7rem; line-height: 1.35; }
   .uffis-viewer .legend .note { display: none; }
   .uffis-viewer .legend .swatch { width: 12px; height: 12px; }
