@@ -139,8 +139,9 @@ async function waitFor(evaluate, expression, what) {
 /**
  * Run the checks against the served page.
  * @param {(expression: string) => Promise<any>} evaluate
+ * @param {(method: string, params?: object) => Promise<any>} send
  */
-async function check(evaluate) {
+async function check(evaluate, send) {
   const card = await waitFor(evaluate, 'document.querySelector("#status .card")?.textContent', "status cards");
   if (!card.includes("1 of 1 flood sites triggered")) throw new Error(`Guatemala card: ${card}`);
   await waitFor(evaluate, '!document.querySelector(".map-loader").classList.contains("on") || document.querySelector(".map-loader-text").textContent === "Loading base map…"', "map loader idle or on base map only");
@@ -151,6 +152,7 @@ async function check(evaluate) {
   const agency = await evaluate('document.getElementById("agency").textContent + " " + document.querySelector("#agency a")?.href');
   if (!agency.startsWith("Warnings: INSIVUMEH portal https://insivumeh.uffis.org")) throw new Error(`agency line: ${agency}`);
   await waitFor(evaluate, 'document.getElementById("info").textContent.includes("qpeaccum") && document.getElementById("info").textContent.includes(" 7 cells shown")', "rainfall map with 7 cells");
+  await waitFor(evaluate, inViewer('(() => { const layers = viewer.map.getStyle().layers; const forecast = layers.findIndex((l) => l.id === "forecast"); return forecast >= 0 && forecast < layers.findIndex((l) => l.type === "symbol"); })()'), "forecast under the place names");
   await checkTimeline(evaluate);
   await checkCountryZoom(evaluate);
   await waitFor(evaluate, 'document.getElementById("files-summary").textContent.startsWith("10 files")', "file tree with 10 files");
@@ -185,6 +187,21 @@ async function check(evaluate) {
   await waitFor(evaluate, 'document.getElementById("info").textContent.includes("prob_depth_ge_10cm") && document.getElementById("info").textContent.includes(" 5 cells shown")', "flood map with 5 cells");
   await evaluate('document.querySelector("input[name=product][value=impact]").click()');
   await waitFor(evaluate, inViewer('document.getElementById("info").textContent.startsWith("Buildings at risk: 1 high, 2 medium, 5 low. People at low risk or worse: 42.") && viewer.features?.geojson.features.length === 1 && Boolean(viewer.map.getLayer("impact-fill"))'), "impact view with one municipality");
+  await checkImpactPopup(evaluate, send);
+}
+
+/**
+ * Clicking the impact polygon opens its municipality popup.
+ * @param {(expression: string) => Promise<any>} evaluate
+ * @param {(method: string, params?: object) => Promise<any>} send
+ */
+async function checkImpactPopup(evaluate, send) {
+  await waitFor(evaluate, inViewer("!viewer.map.isMoving() && viewer.map.loaded()"), "map settled on the impact view");
+  const point = await evaluate(inViewer("(() => { const ring = viewer.features.geojson.features[0].geometry.coordinates[0]; const lng = ring.reduce((a, p) => a + p[0], 0) / ring.length; const lat = ring.reduce((a, p) => a + p[1], 0) / ring.length; const box = viewer.map.getContainer().getBoundingClientRect(); const { x, y } = viewer.map.project([lng, lat]); return { x: x + box.left, y: y + box.top }; })()"));
+  for (const type of ["mousePressed", "mouseReleased"]) {
+    await send("Input.dispatchMouseEvent", { type, x: point.x, y: point.y, button: "left", clickCount: 1 });
+  }
+  await waitFor(evaluate, 'document.querySelector(".maplibregl-popup-content")?.textContent.includes("Test Municipio")', "impact popup for the clicked municipality");
 }
 
 /**
@@ -230,7 +247,7 @@ async function checkCountryZoom(evaluate) {
   const view = inViewer("viewer.map.getCenter().toArray().join()");
   const before = await evaluate(view);
   await evaluate('document.querySelector("input[name=country][value=haiti]").click()');
-  await waitFor(evaluate, `${view} !== ${JSON.stringify(before)}`, "map moved to Haiti");
+  await waitFor(evaluate, inViewer(`viewer.map.getCenter().toArray().join() !== ${JSON.stringify(before)}`), "map moved to Haiti");
   await evaluate('document.querySelector("input[name=country][value=guatemala]").click()');
   await waitFor(evaluate, 'document.getElementById("viewer-title").textContent === "Guatemala" && (document.querySelector("#info a")?.href || "").includes("/guatemala/")', "back on Guatemala");
 }
@@ -267,8 +284,22 @@ async function checkPhone({ evaluate, send }) {
       noteQuiet: getComputedStyle(document.getElementById("info")).display === "none",
     });
   })()`));
+  await waitFor(evaluate, 'document.querySelector(".maplibregl-ctrl-attrib") && !document.querySelector(".maplibregl-ctrl-attrib").classList.contains("maplibregl-compact-show")', "map credit folded on a phone");
   const broken = Object.entries(layout).filter(([, ok]) => !ok).map(([name]) => name);
   if (broken.length) throw new Error(`phone layout: ${broken.join(", ")}`);
+}
+
+/**
+ * With the basemap host blocked, forecasts still draw on a blank map.
+ * @param {{evaluate: Function, send: Function}} page
+ */
+async function checkBasemapDown({ evaluate, send }) {
+  await send("Network.enable");
+  await send("Network.setBlockedURLs", { urls: ["*tiles.openfreemap.org*"] });
+  await evaluate("window.beforeReload = true");
+  await send("Page.reload");
+  await waitFor(evaluate, '!window.beforeReload && document.getElementById("info").textContent.includes(" 7 cells shown")', "rainfall drawn without a basemap");
+  await waitFor(evaluate, inViewer('Boolean(viewer.map.getLayer("forecast")) && !document.querySelector(".map-loader").classList.contains("on")'), "forecast layer shown and loader idle without a basemap");
 }
 
 const { server, port } = await serve();
@@ -276,15 +307,18 @@ const { chrome, devtools } = await launchChrome();
 let failed = false;
 try {
   const page = await openPage(devtools, `http://127.0.0.1:${port}/`);
-  await check(page.evaluate);
+  await check(page.evaluate, page.send);
   page.close();
+  const blocked = await openPage(devtools, `http://127.0.0.1:${port}/`);
+  await checkBasemapDown(blocked);
+  blocked.close();
   const phone = await openPage(devtools, `http://127.0.0.1:${port}/`);
   await checkPhone(phone);
   phone.close();
   const down = await openPage(devtools, `http://127.0.0.1:${port}/?down=1`);
   await checkOutage(down.evaluate);
   down.close();
-  console.log("viewer smoke test ok: status, rainfall, cycle slider, country zoom, gauge hydrograph, opacity, files sheet, flood and impact maps, file tree, phone layout, outage");
+  console.log("viewer smoke test ok: status, rainfall, cycle slider, country zoom, gauge hydrograph, opacity, files sheet, flood and impact maps, impact popup, file tree, basemap outage, phone layout, outage");
 } catch (error) {
   failed = true;
   console.error(`viewer smoke test failed: ${error.message}`);
