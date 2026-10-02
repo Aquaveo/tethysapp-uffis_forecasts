@@ -191,6 +191,7 @@ function setAnnouncements() {
   const mode = playing ? "off" : "polite";
   document.getElementById("cycle-label").setAttribute("aria-live", mode);
   info.setAttribute("aria-live", mode);
+  document.querySelector(".map-loader").setAttribute("aria-live", mode);
 }
 
 /**
@@ -288,7 +289,7 @@ async function drawLayer(current) {
     showNothing(layer.empty);
     return;
   }
-  info.classList.add("loading");
+  startLoading();
   const raster = await loadRaster(`${cycle.root}/${layer.path}`);
   if (!current()) return;
   const legend = LEGENDS[form.product.value];
@@ -310,7 +311,7 @@ async function drawImpact(cycle, layer, current) {
     showNothing(layer.empty);
     return;
   }
-  info.classList.add("loading");
+  startLoading();
   const [raster, admin, summary] = await Promise.all([
     layer.path ? loadRaster(`${cycle.root}/${layer.path}`) : null,
     fetchJson(`${cycle.root}/${layer.ibf.admin}`),
@@ -350,11 +351,20 @@ function showNothing(message) {
 }
 
 /**
+ * Dim the layer note and show the map loader while a layer loads.
+ */
+function startLoading() {
+  info.classList.add("loading");
+  viewer.setBusy("layer", true);
+}
+
+/**
  * Replace the layer note and end its loading dim.
  * @param {...(string|Node)} parts
  */
 function setInfo(...parts) {
   info.classList.remove("loading");
+  viewer.setBusy("layer", false);
   info.replaceChildren(...parts);
 }
 

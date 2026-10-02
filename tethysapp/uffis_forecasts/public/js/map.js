@@ -10,6 +10,7 @@ const OSM_TILES = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 const OSM_CREDIT = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 const FIT = { padding: [16, 16] };
+const BUSY_TEXT = { layer: "Loading layer…", overlay: "Loading layer…", tiles: "Loading base map…" };
 const HOME_ICON = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M2 7.5 8 2l6 5.5"/><path d="M3.8 6.4V14h8.4V6.4"/><path d="M6.6 14v-3.6h2.8V14"/></svg>';
 
 /** A web map that shows one coloured raster and its legend. */
@@ -18,8 +19,13 @@ export class ViewerMap {
    * @param {HTMLElement} container
    */
   constructor(container) {
+    this.busy = new Set();
+    this.loader = this.addLoader(container);
     this.map = L.map(container, { zoomSnap: 1 }).setView([15, -75], 4);
-    L.tileLayer(OSM_TILES, { maxZoom: 18, attribution: OSM_CREDIT }).addTo(this.map);
+    L.tileLayer(OSM_TILES, { maxZoom: 18, attribution: OSM_CREDIT })
+      .on("loading", () => this.setBusy("tiles", true))
+      .on("load", () => this.setBusy("tiles", false))
+      .addTo(this.map);
     this.overlay = null;
     this.features = null;
     this.opacity = 0.85;
@@ -40,7 +46,10 @@ export class ViewerMap {
    */
   show(imageUrl, bounds, fit) {
     this.clear();
-    this.overlay = L.imageOverlay(imageUrl, bounds, { opacity: this.opacity, className: "raster" }).addTo(this.map);
+    this.setBusy("overlay", true);
+    this.overlay = L.imageOverlay(imageUrl, bounds, { opacity: this.opacity, className: "raster" })
+      .on("load error", () => this.setBusy("overlay", false))
+      .addTo(this.map);
     if (fit) this.fit(bounds);
   }
 
@@ -104,6 +113,34 @@ export class ViewerMap {
   clear() {
     if (this.overlay) this.overlay.remove();
     this.overlay = null;
+    this.setBusy("overlay", false);
+  }
+
+  /**
+   * Add the loading indicator over the map, hidden until something loads.
+   * @param {HTMLElement} container
+   * @returns {HTMLElement}
+   */
+  addLoader(container) {
+    const loader = element("div", "map-loader");
+    loader.setAttribute("role", "status");
+    loader.append(element("span", "spinner"), element("span", "map-loader-text", ""));
+    container.after(loader);
+    return loader;
+  }
+
+  /**
+   * Mark one source of loading as busy or done, and show the loader
+   * while any source is busy. A layer outranks the base map in the text.
+   * @param {"layer"|"overlay"|"tiles"} source
+   * @param {boolean} on
+   */
+  setBusy(source, on) {
+    if (on) this.busy.add(source);
+    else this.busy.delete(source);
+    const first = ["layer", "overlay", "tiles"].find((s) => this.busy.has(s));
+    this.loader.classList.toggle("on", Boolean(first));
+    this.loader.querySelector(".map-loader-text").textContent = first ? BUSY_TEXT[first] : "";
   }
 
   /**

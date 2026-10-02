@@ -133,6 +133,9 @@ async function waitFor(evaluate, expression, what) {
 async function check(evaluate) {
   const card = await waitFor(evaluate, 'document.querySelector("#status .card")?.textContent', "status cards");
   if (!card.includes("1 of 1 flood sites triggered")) throw new Error(`Guatemala card: ${card}`);
+  await waitFor(evaluate, '!document.querySelector(".map-loader").classList.contains("on") || document.querySelector(".map-loader-text").textContent === "Loading base map…"', "map loader idle or on base map only");
+  const loaderRole = await evaluate('document.querySelector(".map-loader").getAttribute("role")');
+  if (loaderRole !== "status") throw new Error(`map loader role: ${loaderRole}`);
   const region = await evaluate('document.querySelector("#regions .chip").title');
   if (!region.startsWith("Guatemala, published")) throw new Error(`region note: ${region}`);
   const agency = await evaluate('document.getElementById("agency").textContent + " " + document.querySelector("#agency a")?.href');

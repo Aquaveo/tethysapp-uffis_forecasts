@@ -43,6 +43,45 @@
 .uffis-viewer .map { position: absolute; inset: 0; z-index: 0; }
 .uffis-viewer .raster { image-rendering: pixelated; }
 
+/* Map loader, shown after 250ms */
+.uffis-viewer .map-loader {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--v-console);
+  color: var(--v-on-console);
+  font-weight: 600;
+  box-shadow: var(--v-shadow);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s var(--v-ease), visibility 0s linear 0.2s;
+}
+
+.uffis-viewer .map-loader.on {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.2s var(--v-ease) 0.25s, visibility 0s linear 0.25s;
+}
+
+.uffis-viewer .spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--v-console-line);
+  border-top-color: var(--v-on-console);
+  border-radius: 50%;
+  animation: uffis-spin 0.8s linear infinite;
+}
+
+@keyframes uffis-spin { to { transform: rotate(360deg); } }
+
 .uffis-viewer .float {
   position: absolute;
   z-index: 500;
@@ -573,5 +612,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .uffis-viewer .option span, .uffis-viewer .chip span, .uffis-viewer .layer-info { transition: none; }
+  .uffis-viewer .spinner { animation: none; border-top-color: var(--v-console-line); }
   .uffis-viewer .step:active { transform: none; }
 }
