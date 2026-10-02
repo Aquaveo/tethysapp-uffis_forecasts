@@ -1,110 +1,111 @@
+{% load i18n %}
 <section id="uffis-viewer" class="uffis-viewer" data-outputs-base="{{ outputs_base }}" aria-labelledby="viewer-title">
-  <div id="map" class="map" role="region" aria-label="Forecast map"></div>
+  <div id="map" class="map" role="region" aria-label="{% translate "Forecast map" %}"></div>
 
-  <noscript><p class="float noscript">The forecast map needs JavaScript. The agency portals are listed under About UFFIS.</p></noscript>
+  <noscript><p class="float noscript">{% translate "The forecast map needs JavaScript. The agency portals are listed under About UFFIS." %}</p></noscript>
 
   <button id="toggle-controls" class="float float-btn toggle" type="button" aria-controls="panel" aria-expanded="true">
     <svg class="toggle-icon" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M2 4.5h14M2 9h14M2 13.5h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="6" cy="4.5" r="2" fill="currentColor"/><circle cx="12" cy="9" r="2" fill="currentColor"/><circle cx="7.5" cy="13.5" r="2" fill="currentColor"/></svg>
-    <span class="toggle-text">Hide controls</span>
+    <span class="toggle-text">{% translate "Hide controls" %}</span>
   </button>
 
   <aside id="panel" class="float panel" aria-labelledby="viewer-title">
-    <h1 id="viewer-title" class="panel-title">UFFIS Forecasts</h1>
-    <div id="status" class="panel-status" aria-live="polite"><p class="detail">Loading…</p></div>
+    <h1 id="viewer-title" class="panel-title">{% translate "UFFIS Forecasts" %}</h1>
+    <div id="status" class="panel-status" aria-live="polite"><p class="detail">{% translate "Loading…" %}</p></div>
 
     <form id="controls" class="controls">
       <fieldset>
-        <legend>Hydrologic outputs</legend>
-        <label class="option"><input type="radio" name="product" value="maxunitq"><span>Unit streamflow (max)</span></label>
-        <label class="option"><input type="radio" name="product" value="maxsm"><span>Soil saturation (max)</span></label>
-        <label class="option"><input type="radio" name="product" value="flood"><span>Flood probability</span></label>
+        <legend>{% translate "Hydrologic outputs" %}</legend>
+        <label class="option"><input type="radio" name="product" value="maxunitq"><span>{% translate "Unit streamflow (max)" %}</span></label>
+        <label class="option"><input type="radio" name="product" value="maxsm"><span>{% translate "Soil saturation (max)" %}</span></label>
+        <label class="option"><input type="radio" name="product" value="flood"><span>{% translate "Flood probability" %}</span></label>
       </fieldset>
       <fieldset>
-        <legend>Precipitation</legend>
-        <label class="option"><input type="radio" name="product" value="qpeaccum" checked><span>Rainfall accumulation</span></label>
+        <legend>{% translate "Precipitation" %}</legend>
+        <label class="option"><input type="radio" name="product" value="qpeaccum" checked><span>{% translate "Rainfall accumulation" %}</span></label>
       </fieldset>
       <fieldset>
-        <legend>Impact</legend>
-        <label class="option"><input type="radio" name="product" value="impact"><span>Impact (IBF)</span></label>
+        <legend>{% translate "Impact" %}</legend>
+        <label class="option"><input type="radio" name="product" value="impact"><span>{% translate "Impact (IBF)" %}</span></label>
       </fieldset>
 
       <fieldset class="settings">
-        <legend>Layer</legend>
-        <label>Grid <select name="basin"></select></label>
-        <label>Statistic
+        <legend>{% translate "Layer" %}</legend>
+        <label>{% translate "Grid" %} <select name="basin"></select></label>
+        <label>{% translate "Statistic" %}
           <select name="stat">
-            <option value="median">Median</option>
-            <option value="min">Min</option>
-            <option value="max">Max</option>
+            <option value="median">{% translate "Median" %}</option>
+            <option value="min">{% translate "Min" %}</option>
+            <option value="max">{% translate "Max" %}</option>
           </select>
         </label>
-        <label>Period
+        <label>{% translate "Period" %}
           <select name="period">
-            <option value="forecast">Forecast</option>
-            <option value="nowcast">Nowcast</option>
+            <option value="forecast">{% translate "Forecast" %}</option>
+            <option value="nowcast">{% translate "Nowcast" %}</option>
           </select>
         </label>
-        <label>Flood site <select name="site"></select></label>
-        <label>Depth <select name="depth"></select></label>
+        <label>{% translate "Flood site" %} <select name="site"></select></label>
+        <label>{% translate "Depth" %} <select name="depth"></select></label>
       </fieldset>
 
       <fieldset>
-        <legend>Regions</legend>
+        <legend>{% translate "Regions" %}</legend>
         <div id="regions" class="chips"></div>
       </fieldset>
 
       <label class="opacity">
-        <span>Opacity <output id="opacity-value" for="opacity">85%</output></span>
+        <span>{% translate "Opacity" %} <output id="opacity-value" for="opacity">85%</output></span>
         <input id="opacity" type="range" name="opacity" min="0" max="100" value="85">
       </label>
 
       <fieldset class="gauges">
-        <legend>Gauges</legend>
-        <label class="check"><input type="checkbox" name="gauges" checked> Gauge discharge</label>
-        <div id="gauge-buttons" class="gauge-buttons" aria-live="polite"><p class="detail">Loading…</p></div>
+        <legend>{% translate "Gauges" %}</legend>
+        <label class="check"><input type="checkbox" name="gauges" checked> {% translate "Gauge discharge" %}</label>
+        <div id="gauge-buttons" class="gauge-buttons" aria-live="polite"><p class="detail">{% translate "Loading…" %}</p></div>
       </fieldset>
     </form>
 
-    <button id="open-files" class="panel-btn" type="button">Files and data access</button>
+    <button id="open-files" class="panel-btn" type="button">{% translate "Files and data access" %}</button>
     <p id="stamp" class="stamp"></p>
   </aside>
 
   <section id="hydrograph" class="float hydro" aria-labelledby="hydro-title" hidden>
     <header class="hydro-head">
-      <h2 id="hydro-title" tabindex="-1">Gauge</h2>
-      <button id="close-hydro" type="button" aria-label="Close the hydrograph">Close</button>
+      <h2 id="hydro-title" tabindex="-1">{% translate "Gauge" %}</h2>
+      <button id="close-hydro" type="button" aria-label="{% translate "Close the hydrograph" %}">{% translate "Close" %}</button>
     </header>
     <div id="hydro-chart" class="hydro-chart" aria-live="polite"></div>
     <p id="hydro-summary" class="hydro-summary"></p>
     <ul id="hydro-legend" class="hydro-legend"></ul>
-    <p class="hydro-note">Discharge in m³/s, times in UTC. Bands span the 10th to 90th percentile of the ensemble members and lines are their medians. The dashed line is the cycle time.</p>
+    <p class="hydro-note">{% translate "Discharge in m³/s, times in UTC. Bands span the 10th to 90th percentile of the ensemble members and lines are their medians. The dashed line is the cycle time." %}</p>
   </section>
 
   <div class="float cycle-bar" role="group" aria-labelledby="cycle-label">
-    <p id="cycle-label" class="time-label" aria-live="polite">Loading…</p>
+    <p id="cycle-label" class="time-label" aria-live="polite">{% translate "Loading…" %}</p>
     <div class="time-controls">
-      <button type="button" class="step wide-only" data-step="-6" aria-label="6 hours earlier">‹ 6h</button>
-      <button type="button" class="step" data-step="-1" aria-label="1 hour earlier">‹ 1h</button>
-      <input id="cycle-slider" type="range" max="0" step="1" value="0" aria-label="Forecast cycle, hours before the latest">
-      <button type="button" class="step" data-step="1" aria-label="1 hour later">1h ›</button>
-      <button type="button" class="step wide-only" data-step="6" aria-label="6 hours later">6h ›</button>
-      <button id="cycle-now" type="button" class="step now">Now</button>
-      <button id="cycle-play" type="button" class="step play icon" aria-pressed="false" aria-label="Play" title="Play">
+      <button type="button" class="step wide-only" data-step="-6" aria-label="{% translate "6 hours earlier" %}">‹ 6h</button>
+      <button type="button" class="step" data-step="-1" aria-label="{% translate "1 hour earlier" %}">‹ 1h</button>
+      <input id="cycle-slider" type="range" max="0" step="1" value="0" aria-label="{% translate "Forecast cycle, hours before the latest" %}">
+      <button type="button" class="step" data-step="1" aria-label="{% translate "1 hour later" %}">1h ›</button>
+      <button type="button" class="step wide-only" data-step="6" aria-label="{% translate "6 hours later" %}">6h ›</button>
+      <button id="cycle-now" type="button" class="step now">{% translate "Now" %}</button>
+      <button id="cycle-play" type="button" class="step play icon" aria-pressed="false" aria-label="{% translate "Play" %}" title="{% translate "Play" %}">
         <svg class="icon-play" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3.5 2.2v9.6a.6.6 0 0 0 .9.5l7.6-4.8a.6.6 0 0 0 0-1L4.4 1.7a.6.6 0 0 0-.9.5Z" fill="currentColor"/></svg>
         <svg class="icon-pause" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="3" y="2" width="3" height="10" rx="0.8" fill="currentColor"/><rect x="8" y="2" width="3" height="10" rx="0.8" fill="currentColor"/></svg>
       </button>
-      <button id="cycle-speed" type="button" class="step speed" aria-label="Playback speed 1×" title="Playback speed">1×</button>
+      <button id="cycle-speed" type="button" class="step speed" aria-label="{% translate "Playback speed 1×" %}" title="{% translate "Playback speed" %}">1×</button>
     </div>
   </div>
 
   <p id="info" class="layer-info" aria-live="polite"></p>
 
   <dialog id="files-panel" class="files-panel" aria-labelledby="files-title">
-    <form method="dialog" class="sheet-close"><button type="submit">Close</button></form>
-    <h2 id="files-title">Files and data access</h2>
-    <p class="detail">For the selected country. Every file is public at a stable URL, under <code>{{ outputs_base }}</code>.</p>
+    <form method="dialog" class="sheet-close"><button type="submit">{% translate "Close" %}</button></form>
+    <h2 id="files-title">{% translate "Files and data access" %}</h2>
+    <p class="detail">{% blocktranslate %}For the selected country. Every file is public at a stable URL, under <code>{{ outputs_base }}</code>.{% endblocktranslate %}</p>
     <div id="access"></div>
-    <label class="filter">Filter files <input id="file-filter" type="search" placeholder="e.g. summary or prob_depth"></label>
+    <label class="filter">{% translate "Filter files" %} <input id="file-filter" type="search" placeholder="{% translate "e.g. summary or prob_depth" %}"></label>
     <p id="files-summary" class="stamp"></p>
     <div id="files"></div>
   </dialog>

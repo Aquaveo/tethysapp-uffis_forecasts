@@ -1,0 +1,315 @@
+# UFFIS Forecasts translations (fr).
+msgid ""
+msgstr ""
+"Project-Id-Version: UFFIS Forecasts\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-02 16:09-0500\n"
+"PO-Revision-Date: 2026-10-02 00:00+0000\n"
+"Last-Translator: UFFIS <uffis@aquaveo.com>\n"
+"Language-Team: UFFIS\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgid "path from index.json"
+msgstr "chemin dans index.json"
+
+msgid "Base URL"
+msgstr "URL de base"
+
+msgid "Newest cycle"
+msgstr "Cycle le plus récent"
+
+msgid "File list"
+msgstr "Liste des fichiers"
+
+msgid "File URL"
+msgstr "URL d'un fichier"
+
+msgid ""
+"Countries: %(countries)s. Kept about one day. Public, CORS enabled, no key "
+"needed."
+msgstr ""
+"Pays : %(countries)s. Conservés environ un jour. Publics, CORS activé, sans "
+"clé."
+
+msgid "Open the checking notebook in Colab"
+msgstr "Ouvrir le notebook de vérification dans Colab"
+
+msgid "open"
+msgstr "ouvrir"
+
+msgid "Guatemala"
+msgstr "Guatemala"
+
+msgid "Haiti"
+msgstr "Haïti"
+
+msgid "Antigua and Barbuda"
+msgstr "Antigua-et-Barbuda"
+
+msgid "Comoros"
+msgstr "Comores"
+
+msgid "Rainfall accumulation"
+msgstr "Cumul de pluie"
+
+msgid "Max unit streamflow"
+msgstr "Débit spécifique maximal"
+
+msgid "m³/s per km²"
+msgstr "m³/s par km²"
+
+msgid "Soil saturation"
+msgstr "Saturation du sol"
+
+msgid "Flood probability"
+msgstr "Probabilité d'inondation"
+
+msgid "% of members"
+msgstr "% des membres"
+
+msgid "Impact risk level"
+msgstr "Niveau de risque d'impact"
+
+msgid "IBF risk matrix"
+msgstr "matrice de risque IBF"
+
+msgid "Very low"
+msgstr "Très faible"
+
+msgid "Low"
+msgstr "Faible"
+
+msgid "Medium"
+msgstr "Moyen"
+
+msgid "High"
+msgstr "Élevé"
+
+msgid "%(low)s to %(high)s"
+msgstr "%(low)s à %(high)s"
+
+msgid "%(low)s and more"
+msgstr "%(low)s et plus"
+
+msgid "copy URL"
+msgstr "copier l'URL"
+
+msgid "copied"
+msgstr "copiée"
+
+msgid "%(count)s file, %(size)s"
+msgid_plural "%(count)s files, %(size)s"
+msgstr[0] "%(count)s fichier, %(size)s"
+msgstr[1] "%(count)s fichiers, %(size)s"
+
+msgid "Satellite rainfall (STREAM-SAT)"
+msgstr "Pluie satellitaire (STREAM-SAT)"
+
+msgid "Nowcast (SCaMPR)"
+msgstr "Prévision immédiate (SCaMPR)"
+
+msgid "Forecast (StormLab)"
+msgstr "Prévision (StormLab)"
+
+msgid "%(run)s %(flow)s m³/s at %(when)s"
+msgstr "%(run)s %(flow)s m³/s à %(when)s"
+
+msgid "Median peaks: %(peaks)s."
+msgstr "Pics médians : %(peaks)s."
+
+msgid "high"
+msgstr "élevé"
+
+msgid "medium"
+msgstr "moyen"
+
+msgid "low"
+msgstr "faible"
+
+msgid ""
+"Buildings at risk: %(counts)s. People at low risk or worse: %(people)s."
+msgstr ""
+"Bâtiments à risque : %(counts)s. Personnes à risque faible ou plus : "
+"%(people)s."
+
+msgid "Municipality"
+msgstr "Commune"
+
+msgid "Risk level"
+msgstr "Niveau de risque"
+
+msgid "Population"
+msgstr "Population"
+
+msgid "People exposed"
+msgstr "Personnes exposées"
+
+msgid "Buildings exposed"
+msgstr "Bâtiments exposés"
+
+msgid "Roads exposed"
+msgstr "Routes exposées"
+
+msgid "median"
+msgstr "médiane"
+
+msgid "min"
+msgstr "min."
+
+msgid "max"
+msgstr "max."
+
+msgid "forecast"
+msgstr "prévision"
+
+msgid "nowcast"
+msgstr "prévision immédiate"
+
+msgid "Municipal risk, over flood probability at %(depth)s cm"
+msgstr "Risque communal, sur la probabilité d'inondation à %(depth)s cm"
+
+msgid "No impact results in this cycle: no flood site triggered."
+msgstr ""
+"Aucun résultat d'impact pour ce cycle : aucun site d'inondation déclenché."
+
+msgid "Depth at least %(depth)s cm, overbank view"
+msgstr "Profondeur d'au moins %(depth)s cm, vue de débordement"
+
+msgid "No flood site triggered in this cycle."
+msgstr "Aucun site d'inondation déclenché pour ce cycle."
+
+msgid "Ensemble %(stat)s, %(period)s"
+msgstr "Ensemble : %(stat)s, %(period)s"
+
+msgid "This product is not produced for this country."
+msgstr "Ce produit n'est pas produit pour ce pays."
+
+msgid "Checked %(time)s UTC, refreshes every 5 minutes"
+msgstr "Vérifié à %(time)s UTC, actualisé toutes les 5 minutes"
+
+msgid "Show controls"
+msgstr "Afficher les commandes"
+
+msgid "Hide controls"
+msgstr "Masquer les commandes"
+
+msgid "Playback speed %(speed)s"
+msgstr "Vitesse de lecture %(speed)s"
+
+msgid "Pause"
+msgstr "Pause"
+
+msgid "Play"
+msgstr "Lecture"
+
+msgid "%(name)s · %(count)s cell shown"
+msgid_plural "%(name)s · %(count)s cells shown"
+msgstr[0] "%(name)s · %(count)s cellule affichée"
+msgstr[1] "%(name)s · %(count)s cellules affichées"
+
+msgid "open file"
+msgstr "ouvrir le fichier"
+
+msgid "open GeoJSON"
+msgstr "ouvrir le GeoJSON"
+
+msgid "%(count)s file matching \"%(filter)s\", %(size)s"
+msgid_plural "%(count)s files matching \"%(filter)s\", %(size)s"
+msgstr[0] "%(count)s fichier correspondant à « %(filter)s », %(size)s"
+msgstr[1] "%(count)s fichiers correspondant à « %(filter)s », %(size)s"
+
+msgid "try again"
+msgstr "réessayer"
+
+msgid "Could not load this layer: %(error)s"
+msgstr "Impossible de charger cette couche : %(error)s"
+
+msgid "Gauge markers are off."
+msgstr "Les marqueurs de stations sont désactivés."
+
+msgid "No gauge series for this country."
+msgstr "Aucune série de stations pour ce pays."
+
+msgid "Gauges could not be loaded."
+msgstr "Les stations n'ont pas pu être chargées."
+
+msgid "Loading…"
+msgstr "Chargement…"
+
+msgid "No readable series for this gauge."
+msgstr "Aucune série lisible pour cette station."
+
+msgid "%(run)s, %(count)s member"
+msgid_plural "%(run)s, %(count)s members"
+msgstr[0] "%(run)s, %(count)s membre"
+msgstr[1] "%(run)s, %(count)s membres"
+
+msgid "No cycle for this hour."
+msgstr "Aucun cycle pour cette heure."
+
+msgid "No cycle was published for this hour, or it has expired."
+msgstr "Aucun cycle n'a été publié pour cette heure, ou il a expiré."
+
+msgid "Loading layer…"
+msgstr "Chargement de la couche…"
+
+msgid "Loading base map…"
+msgstr "Chargement du fond de carte…"
+
+msgid "Zoom to the country"
+msgstr "Zoomer sur le pays"
+
+msgid "Hydrograph for %(gauge)s"
+msgstr "Hydrogramme pour %(gauge)s"
+
+msgid "All sites (mosaic)"
+msgstr "Tous les sites (mosaïque)"
+
+msgid "no outputs found"
+msgstr "aucune sortie trouvée"
+
+msgid "published %(age)s"
+msgstr "publié %(age)s"
+
+msgid "%(minutes)s min ago"
+msgstr "il y a %(minutes)s min"
+
+msgid "%(hours)s h %(minutes)s min ago"
+msgstr "il y a %(hours)s h %(minutes)s min"
+
+msgid "No outputs found"
+msgstr "Aucune sortie trouvée"
+
+msgid "%(triggered)s of %(sites)s flood site triggered"
+msgid_plural "%(triggered)s of %(sites)s flood sites triggered"
+msgstr[0] "%(triggered)s site d'inondation déclenché sur %(sites)s"
+msgstr[1] "%(triggered)s sites d'inondation déclenchés sur %(sites)s"
+
+msgid "No flood sites"
+msgstr "Aucun site d'inondation"
+
+msgid "Published %(age)s"
+msgstr "Publié %(age)s"
+
+msgid "Cycle %(time)s UTC"
+msgstr "Cycle du %(time)s UTC"
+
+msgid "%(count)s file"
+msgid_plural "%(count)s files"
+msgstr[0] "%(count)s fichier"
+msgstr[1] "%(count)s fichiers"
+
+msgid "%(count)s flood site summary unreadable"
+msgid_plural "%(count)s flood site summaries unreadable"
+msgstr[0] "%(count)s résumé de site d'inondation illisible"
+msgstr[1] "%(count)s résumés de sites d'inondation illisibles"
+
+msgid "%(hours)s h before latest"
+msgstr "%(hours)s h avant le plus récent"
+
+msgid "latest"
+msgstr "le plus récent"

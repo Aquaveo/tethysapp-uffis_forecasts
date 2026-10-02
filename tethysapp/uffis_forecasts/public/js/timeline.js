@@ -4,6 +4,7 @@
  * what each recent run issued.
  */
 
+import { fill, gettext } from "./i18n.js";
 import { cycleTime } from "./outputs.js";
 
 /** Hours before the latest cycle the slider reaches. */
@@ -39,5 +40,6 @@ export function clampOffset(offset) {
  */
 export function timeLabel(latest, offset) {
   const when = cycleTime(shiftCycle(latest, offset)).toISOString().slice(0, 16).replace("T", " ");
-  return `${when} UTC · ${offset ? `${-offset} h before latest` : "latest"}`;
+  const age = offset ? fill(gettext("%(hours)s h before latest"), { hours: -offset }) : gettext("latest");
+  return `${when} UTC · ${age}`;
 }

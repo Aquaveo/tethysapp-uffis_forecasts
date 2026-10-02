@@ -3,17 +3,19 @@
  * (10th to 90th percentile of members) and one median line per run.
  */
 
+import { fill, gettext, locale, number } from "./i18n.js";
+
 const SVG = "http://www.w3.org/2000/svg";
 const HOUR_MS = 3600 * 1000;
 const MARGIN = { top: 10, right: 12, bottom: 36, left: 46 };
-const TIME_FORMAT = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
-const DAY_FORMAT = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+const TIME_FORMAT = new Intl.DateTimeFormat(locale(), { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
+const DAY_FORMAT = new Intl.DateTimeFormat(locale(), { day: "numeric", month: "short", timeZone: "UTC" });
 
 /** How each run is labelled and coloured. */
 export const RUN_STYLE = {
-  stream_sat: { label: "Satellite rainfall (STREAM-SAT)", color: "#4b5563" },
-  scampr: { label: "Nowcast (SCaMPR)", color: "#d97706" },
-  stormlab: { label: "Forecast (StormLab)", color: "#2563eb" },
+  stream_sat: { label: gettext("Satellite rainfall (STREAM-SAT)"), color: "#4b5563" },
+  scampr: { label: gettext("Nowcast (SCaMPR)"), color: "#d97706" },
+  stormlab: { label: gettext("Forecast (StormLab)"), color: "#2563eb" },
 };
 
 /**
@@ -88,9 +90,10 @@ export function hydrographSummary(runs) {
   const peaks = runs.map(({ run, stats }) => {
     const peak = stats.reduce((best, s) => (s.median > best.median ? s : best));
     const when = `${TIME_FORMAT.format(peak.time)} ${DAY_FORMAT.format(peak.time)}`;
-    return `${RUN_STYLE[run].label} ${peak.median.toFixed(1)} m³/s at ${when}`;
+    const flow = peak.median.toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    return fill(gettext("%(run)s %(flow)s m³/s at %(when)s"), { run: RUN_STYLE[run].label, flow, when });
   });
-  return `Median peaks: ${peaks.join("; ")}.`;
+  return fill(gettext("Median peaks: %(peaks)s."), { peaks: peaks.join("; ") });
 }
 
 /**
@@ -135,7 +138,7 @@ export function hydrographSvg(runs, cycle, { width, height }) {
 
   for (const v of yTicks) {
     svg.append(node("line", { x1: MARGIN.left, x2: width - MARGIN.right, y1: y(v), y2: y(v), class: "grid" }));
-    svg.append(textNode({ x: MARGIN.left - 6, y: y(v) + 4, "text-anchor": "end", class: "tick" }, v.toLocaleString("en")));
+    svg.append(textNode({ x: MARGIN.left - 6, y: y(v) + 4, "text-anchor": "end", class: "tick" }, number(v)));
   }
   for (const t of timeTicks(start, end, 6)) {
     svg.append(node("line", { x1: x(t), x2: x(t), y1: MARGIN.top, y2: height - MARGIN.bottom, class: "grid" }));

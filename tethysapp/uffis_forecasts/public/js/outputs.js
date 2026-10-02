@@ -3,6 +3,8 @@
  * and finding product files inside a cycle.
  */
 
+import { gettext } from "./i18n.js";
+
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1"]);
 
 /**
@@ -143,7 +145,7 @@ export function floodLayers(paths) {
     const [, folder, site, hazard] = match;
     const id = site || "mosaic";
     if (layers.has(id) && hazard === "pluvial") continue;
-    layers.set(id, { id, label: site ? withoutCountry(site) : "All sites (mosaic)", folder });
+    layers.set(id, { id, label: site ? withoutCountry(site) : gettext("All sites (mosaic)"), folder });
   }
   return [...layers.values()].sort((a, b) => a.label.localeCompare(b.label));
 }

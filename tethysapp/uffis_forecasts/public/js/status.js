@@ -3,11 +3,12 @@
  * cycle is and whether any flood site triggered.
  */
 
+import { fill, gettext, locale, ngettext, number } from "./i18n.js";
 import { AGE_LIMITS } from "./config.js";
 import { element } from "./dom.js";
 import { cycleTime, fetchJson, loadCycle, siteSummaryPaths } from "./outputs.js";
 
-const TIME_FORMAT = new Intl.DateTimeFormat("en-GB", {
+const TIME_FORMAT = new Intl.DateTimeFormat(locale(), {
   day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC",
 });
 
@@ -67,8 +68,8 @@ export function ageLevel(minutes) {
  * @returns {string}
  */
 export function ageText(minutes) {
-  if (minutes < 60) return `${minutes} min ago`;
-  return `${Math.floor(minutes / 60)} h ${minutes % 60} min ago`;
+  if (minutes < 60) return fill(gettext("%(minutes)s min ago"), { minutes });
+  return fill(gettext("%(hours)s h %(minutes)s min ago"), { hours: Math.floor(minutes / 60), minutes: minutes % 60 });
 }
 
 /**
@@ -82,22 +83,22 @@ export function statusCard(status, now) {
   card.append(element("h3", "", status.name));
   if (status.error) {
     card.classList.add("stale");
-    card.append(element("p", "age", "No outputs found"), element("p", "detail", status.error));
+    card.append(element("p", "age", gettext("No outputs found")), element("p", "detail", status.error));
     return card;
   }
   const minutes = ageMinutes(status.published, now);
   card.classList.add(ageLevel(minutes));
   const floods = status.sites
-    ? `${status.triggered} of ${status.sites} flood sites triggered`
-    : "No flood sites";
+    ? fill(ngettext("%(triggered)s of %(sites)s flood site triggered", "%(triggered)s of %(sites)s flood sites triggered", status.sites), { triggered: status.triggered, sites: status.sites })
+    : gettext("No flood sites");
   card.append(
-    element("p", "age", `Published ${ageText(minutes)}`),
-    element("p", "detail", `Cycle ${TIME_FORMAT.format(cycleTime(status.cycle))} UTC`),
-    element("p", "detail", `${status.files.toLocaleString("en")} files`),
+    element("p", "age", fill(gettext("Published %(age)s"), { age: ageText(minutes) })),
+    element("p", "detail", fill(gettext("Cycle %(time)s UTC"), { time: TIME_FORMAT.format(cycleTime(status.cycle)) })),
+    element("p", "detail", fill(ngettext("%(count)s file", "%(count)s files", status.files), { count: number(status.files) })),
     element("p", status.triggered ? "detail alert" : "detail", floods),
   );
   if (status.unreadSites) {
-    card.append(element("p", "detail", `${status.unreadSites} flood site summaries unreadable`));
+    card.append(element("p", "detail", fill(ngettext("%(count)s flood site summary unreadable", "%(count)s flood site summaries unreadable", status.unreadSites), { count: status.unreadSites })));
   }
   return card;
 }

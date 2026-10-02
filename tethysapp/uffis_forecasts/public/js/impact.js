@@ -6,10 +6,12 @@
  * no hazard and classes 1-4 are the 10, 30, 70 and 100 cm thresholds.
  */
 
+import { fill, gettext, locale, number } from "./i18n.js";
 import { element } from "./dom.js";
 
 const HAZARD_CLASSES = [1, 2, 3, 4];
 const LEVELS_HIGH_FIRST = ["HIGH", "MEDIUM", "LOW"];
+const LEVEL_WORDS = { HIGH: gettext("high"), MEDIUM: gettext("medium"), LOW: gettext("low") };
 
 /**
  * People, buildings and road length exposed to any hazard class.
@@ -27,9 +29,9 @@ export function exposure(properties) {
  * @returns {string}
  */
 export function riskSummary(summary) {
-  const counts = LEVELS_HIGH_FIRST.map((level) => `${summary.buildings_by_risk[level] || 0} ${level.toLowerCase()}`);
-  const people = Math.round(summary.population_at_yellow_or_worse || 0).toLocaleString("en");
-  return `Buildings at risk: ${counts.join(", ")}. People at low risk or worse: ${people}.`;
+  const counts = LEVELS_HIGH_FIRST.map((level) => `${number(summary.buildings_by_risk[level] || 0)} ${LEVEL_WORDS[level]}`);
+  const people = number(Math.round(summary.population_at_yellow_or_worse || 0));
+  return fill(gettext("Buildings at risk: %(counts)s. People at low risk or worse: %(people)s."), { counts: counts.join(", "), people });
 }
 
 /**
@@ -41,7 +43,7 @@ export function riskSummary(summary) {
 export function adminName(properties) {
   const key = Object.keys(properties).find((k) => k === "ADM_NAME" || /^ADM\d_EN$/.test(k));
   const code = Object.keys(properties).find((k) => k === "ADM_ID" || /^ADM\d_PCODE$/.test(k));
-  return (key && properties[key]) || (code && properties[code]) || "Municipality";
+  return (key && properties[key]) || (code && properties[code]) || gettext("Municipality");
 }
 
 /**
@@ -53,11 +55,11 @@ export function popupElement(properties) {
   const e = exposure(properties);
   const box = element("div", "popup");
   const rows = [
-    ["Risk level", properties.risk_level],
-    ["Population", Math.round(properties.total_pop || 0).toLocaleString("en")],
-    ["People exposed", Math.round(e.population).toLocaleString("en")],
-    ["Buildings exposed", e.buildings.toLocaleString("en")],
-    ["Roads exposed", `${e.roadsKm.toFixed(1)} km`],
+    [gettext("Risk level"), properties.risk_level],
+    [gettext("Population"), number(Math.round(properties.total_pop || 0))],
+    [gettext("People exposed"), number(Math.round(e.population))],
+    [gettext("Buildings exposed"), number(e.buildings)],
+    [gettext("Roads exposed"), `${e.roadsKm.toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km`],
   ];
   box.append(element("strong", "", adminName(properties)));
   for (const [label, value] of rows) {

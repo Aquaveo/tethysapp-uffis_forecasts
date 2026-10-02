@@ -2,6 +2,8 @@
  * Small helpers for building page elements.
  */
 
+import { gettext } from "./i18n.js";
+
 /**
  * Create an element with an optional class and text.
  * @param {string} tag
@@ -37,12 +39,12 @@ export function setOptions(select, options) {
  * @returns {HTMLButtonElement}
  */
 export function copyButton(url) {
-  const button = element("button", "action", "copy URL");
+  const button = element("button", "action", gettext("copy URL"));
   button.type = "button";
   button.addEventListener("click", async () => {
     await navigator.clipboard.writeText(url);
-    button.textContent = "copied";
-    setTimeout(() => { button.textContent = "copy URL"; }, 1500);
+    button.textContent = gettext("copied");
+    setTimeout(() => { button.textContent = gettext("copy URL"); }, 1500);
   });
   return button;
 }

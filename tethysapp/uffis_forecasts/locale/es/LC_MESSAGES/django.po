@@ -1,0 +1,164 @@
+# UFFIS Forecasts translations (es).
+msgid ""
+msgstr ""
+"Project-Id-Version: UFFIS Forecasts\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-02 16:09-0500\n"
+"PO-Revision-Date: 2026-10-02 00:00+0000\n"
+"Last-Translator: UFFIS <uffis@aquaveo.com>\n"
+"Language-Team: UFFIS\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Forecast map"
+msgstr "Mapa de pronósticos"
+
+msgid ""
+"The forecast map needs JavaScript. The agency portals are listed under About"
+" UFFIS."
+msgstr ""
+"El mapa de pronósticos necesita JavaScript. Los portales de los servicios "
+"aparecen en Acerca de UFFIS."
+
+msgid "Hide controls"
+msgstr "Ocultar controles"
+
+msgid "UFFIS Forecasts"
+msgstr "Pronósticos UFFIS"
+
+msgid "Loading…"
+msgstr "Cargando…"
+
+msgid "Hydrologic outputs"
+msgstr "Resultados hidrológicos"
+
+msgid "Unit streamflow (max)"
+msgstr "Caudal específico (máx.)"
+
+msgid "Soil saturation (max)"
+msgstr "Saturación del suelo (máx.)"
+
+msgid "Flood probability"
+msgstr "Probabilidad de inundación"
+
+msgid "Precipitation"
+msgstr "Precipitación"
+
+msgid "Rainfall accumulation"
+msgstr "Lluvia acumulada"
+
+msgid "Impact"
+msgstr "Impacto"
+
+msgid "Impact (IBF)"
+msgstr "Impacto (pronóstico basado en impactos)"
+
+msgid "Layer"
+msgstr "Capa"
+
+msgid "Grid"
+msgstr "Malla"
+
+msgid "Statistic"
+msgstr "Estadístico"
+
+msgid "Median"
+msgstr "Mediana"
+
+msgid "Min"
+msgstr "Mín."
+
+msgid "Max"
+msgstr "Máx."
+
+msgid "Period"
+msgstr "Periodo"
+
+msgid "Forecast"
+msgstr "Pronóstico"
+
+msgid "Nowcast"
+msgstr "Pronóstico inmediato"
+
+msgid "Flood site"
+msgstr "Sitio de inundación"
+
+msgid "Depth"
+msgstr "Profundidad"
+
+msgid "Regions"
+msgstr "Regiones"
+
+msgid "Opacity"
+msgstr "Opacidad"
+
+msgid "Gauges"
+msgstr "Estaciones"
+
+msgid "Gauge discharge"
+msgstr "Caudal en estaciones"
+
+msgid "Files and data access"
+msgstr "Archivos y acceso a los datos"
+
+msgid "Gauge"
+msgstr "Estación"
+
+msgid "Close the hydrograph"
+msgstr "Cerrar el hidrograma"
+
+msgid "Close"
+msgstr "Cerrar"
+
+msgid ""
+"Discharge in m³/s, times in UTC. Bands span the 10th to 90th percentile of "
+"the ensemble members and lines are their medians. The dashed line is the "
+"cycle time."
+msgstr ""
+"Caudal en m³/s, horas en UTC. Las bandas cubren del percentil 10 al 90 de "
+"los miembros del ensamble y las líneas son sus medianas. La línea "
+"discontinua marca la hora del ciclo."
+
+msgid "6 hours earlier"
+msgstr "6 horas antes"
+
+msgid "1 hour earlier"
+msgstr "1 hora antes"
+
+msgid "Forecast cycle, hours before the latest"
+msgstr "Ciclo de pronóstico, horas antes del más reciente"
+
+msgid "1 hour later"
+msgstr "1 hora después"
+
+msgid "6 hours later"
+msgstr "6 horas después"
+
+msgid "Now"
+msgstr "Ahora"
+
+msgid "Play"
+msgstr "Reproducir"
+
+msgid "Playback speed 1×"
+msgstr "Velocidad de reproducción 1×"
+
+msgid "Playback speed"
+msgstr "Velocidad de reproducción"
+
+#, python-format
+msgid ""
+"For the selected country. Every file is public at a stable URL, under "
+"<code>%(outputs_base)s</code>."
+msgstr ""
+"Para el país seleccionado. Cada archivo es público en una dirección estable,"
+" bajo <code>%(outputs_base)s</code>."
+
+msgid "Filter files"
+msgstr "Filtrar archivos"
+
+msgid "e.g. summary or prob_depth"
+msgstr "p. ej. summary o prob_depth"

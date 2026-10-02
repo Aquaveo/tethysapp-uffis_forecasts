@@ -37,7 +37,19 @@ async function viewerPage(outputs) {
   const templates = join(APP, "templates", "uffis_forecasts");
   const assets = await readFile(join(templates, "assets.html"), "utf8");
   const viewer = await readFile(join(templates, "viewer.html"), "utf8");
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">${assets}</head><body>${viewer.replaceAll("{{ outputs_base }}", outputs)}</body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">${assets}</head><body>${englishTemplate(viewer).replaceAll("{{ outputs_base }}", outputs)}</body></html>`;
+}
+
+/**
+ * Render the template's translation tags as Django does in English.
+ * @param {string} template
+ * @returns {string}
+ */
+function englishTemplate(template) {
+  return template
+    .replace("{% load i18n %}\n", "")
+    .replace(/{% translate "((?:[^"\\]|\\.)*)" %}/g, (_, text) => text.replace(/\\"/g, '"'))
+    .replace(/{% blocktranslate %}([\s\S]*?){% endblocktranslate %}/g, "$1");
 }
 
 /**
@@ -142,7 +154,7 @@ async function waitFor(evaluate, expression, what) {
  */
 async function check(evaluate, send) {
   const card = await waitFor(evaluate, 'document.querySelector("#status .card")?.textContent', "status cards");
-  if (!card.includes("1 of 1 flood sites triggered")) throw new Error(`Guatemala card: ${card}`);
+  if (!card.includes("1 of 1 flood site triggered")) throw new Error(`Guatemala card: ${card}`);
   await waitFor(evaluate, '!document.querySelector(".map-loader").classList.contains("on") || document.querySelector(".map-loader-text").textContent === "Loading base map…"', "map loader idle or on base map only");
   const loaderRole = await evaluate('document.querySelector(".map-loader").getAttribute("role")');
   if (loaderRole !== "status") throw new Error(`map loader role: ${loaderRole}`);

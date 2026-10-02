@@ -2,6 +2,7 @@
  * Page entry point: wires the control panel, the files sheet and the map.
  */
 
+import { fill, gettext, ngettext, number } from "./i18n.js";
 import { COUNTRIES, FLOOD_DEPTHS_CM, IMPACT_LEGEND, LEGENDS, SMALL_SCREEN } from "./config.js";
 import { accessElement, accessUrls } from "./access.js";
 import { classifyCells, drawnCount, paintCells } from "./colors.js";
@@ -53,7 +54,7 @@ async function refreshStatus() {
   const now = new Date();
   markRegions(regions, statuses, now);
   showSelectedStatus();
-  document.getElementById("stamp").textContent = `Checked ${now.toISOString().slice(11, 16)} UTC, refreshes every 5 minutes`;
+  document.getElementById("stamp").textContent = fill(gettext("Checked %(time)s UTC, refreshes every 5 minutes"), { time: now.toISOString().slice(11, 16) });
 }
 
 /**
@@ -82,7 +83,7 @@ function togglePanel(button) {
   const panel = document.getElementById("panel");
   panel.hidden = !panel.hidden;
   button.setAttribute("aria-expanded", String(!panel.hidden));
-  button.querySelector(".toggle-text").textContent = panel.hidden ? "Show controls" : "Hide controls";
+  button.querySelector(".toggle-text").textContent = panel.hidden ? gettext("Show controls") : gettext("Hide controls");
 }
 
 /**
@@ -186,7 +187,7 @@ function cycleSpeed(button) {
   speed = SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length];
   const label = `${speed}×`;
   button.textContent = label;
-  button.setAttribute("aria-label", `Playback speed ${label}`);
+  button.setAttribute("aria-label", fill(gettext("Playback speed %(speed)s"), { speed: label }));
 }
 
 /**
@@ -219,8 +220,8 @@ function setAnnouncements() {
 function setPlaying(button, on) {
   playing = on;
   button.setAttribute("aria-pressed", String(on));
-  button.setAttribute("aria-label", on ? "Pause" : "Play");
-  button.title = on ? "Pause" : "Play";
+  button.setAttribute("aria-label", on ? gettext("Pause") : gettext("Play"));
+  button.title = on ? gettext("Pause") : gettext("Play");
   setAnnouncements();
 }
 
@@ -313,7 +314,7 @@ async function drawLayer(current) {
   const shown = showRaster(raster, legend, layer.key !== fittedKey);
   fittedKey = layer.key;
   viewer.setLegend(legend, layer.note);
-  setInfo(`${productName(layer.path)} · ${shown.toLocaleString("en")} cells shown `, openLink(`${cycle.root}/${layer.path}`, "open file"));
+  setInfo(`${fill(ngettext("%(name)s · %(count)s cell shown", "%(name)s · %(count)s cells shown", shown), { name: productName(layer.path), count: number(shown) })} `, openLink(`${cycle.root}/${layer.path}`, gettext("open file")));
   info.classList.add("routine");
 }
 
@@ -342,7 +343,7 @@ async function drawImpact(cycle, layer, current) {
   viewer.showFeatures(admin, popupElement, fit);
   fittedKey = layer.key;
   viewer.setLegend(IMPACT_LEGEND, layer.note);
-  setInfo(`${riskSummary(summary)} `, openLink(`${cycle.root}/${layer.ibf.admin}`, "open GeoJSON"));
+  setInfo(`${riskSummary(summary)} `, openLink(`${cycle.root}/${layer.ibf.admin}`, gettext("open GeoJSON")));
 }
 
 /**
@@ -424,10 +425,12 @@ function showFiles(cycle) {
   filesCycle = cycle;
   const text = filter.value;
   const tree = buildTree(filterFiles(cycle.files, text));
-  const note = text.trim() ? ` matching "${text.trim()}"` : "";
-  const noun = tree.count === 1 ? "file" : "files";
-  document.getElementById("files-summary").textContent = `${tree.count.toLocaleString("en")} ${noun}${note}, ${formatBytes(tree.size)}`;
-  document.getElementById("files").replaceChildren(folderElement(tree, cycle.root, Boolean(note)));
+  const values = { count: number(tree.count), size: formatBytes(tree.size), filter: text.trim() };
+  const summary = values.filter
+    ? ngettext("%(count)s file matching \"%(filter)s\", %(size)s", "%(count)s files matching \"%(filter)s\", %(size)s", tree.count)
+    : ngettext("%(count)s file, %(size)s", "%(count)s files, %(size)s", tree.count);
+  document.getElementById("files-summary").textContent = fill(summary, values);
+  document.getElementById("files").replaceChildren(folderElement(tree, cycle.root, Boolean(values.filter)));
 }
 
 /**
@@ -435,10 +438,10 @@ function showFiles(cycle) {
  * @param {Error} error
  */
 function showError(error) {
-  const retry = element("button", "action", "try again");
+  const retry = element("button", "action", gettext("try again"));
   retry.type = "button";
   retry.addEventListener("click", refresh);
-  setInfo(`Could not load this layer: ${error.message} `, retry);
+  setInfo(`${fill(gettext("Could not load this layer: %(error)s"), { error: error.message })} `, retry);
 }
 
 /**
@@ -451,13 +454,13 @@ async function showGauges(cycle) {
   const list = document.getElementById("gauge-buttons");
   viewer.clearGauges();
   if (!form.gauges.checked) {
-    clearGaugeList(list, "Gauge markers are off.");
+    clearGaugeList(list, gettext("Gauge markers are off."));
     return;
   }
   const grids = gaugeFiles(cycle.paths);
   const grid = grids[form.basin.value] ? form.basin.value : Object.keys(grids)[0];
   if (!grid || !grids[grid].control) {
-    clearGaugeList(list, "No gauge series for this country.");
+    clearGaugeList(list, gettext("No gauge series for this country."));
     return;
   }
   dimGaugeList(list);
@@ -469,10 +472,10 @@ async function showGauges(cycle) {
     const open = (gauge) => openHydrograph(cycle, gauge, grids[grid].gauges[gauge.name]);
     viewer.showGauges(located, open);
     if (located.length) fillGauges(list, located, open);
-    else clearGaugeList(list, "No gauge series for this country.");
+    else clearGaugeList(list, gettext("No gauge series for this country."));
   } catch (error) {
     if (token !== gaugeToken) return;
-    clearGaugeList(list, "Gauges could not be loaded.");
+    clearGaugeList(list, gettext("Gauges could not be loaded."));
     showError(error);
   }
 }
@@ -509,14 +512,14 @@ async function openHydrograph(cycle, gauge, files) {
   const summary = document.getElementById("hydro-summary");
   title.textContent = gaugeLabel(gauge.name);
   title.focus();
-  chart.textContent = "Loading…";
+  chart.textContent = gettext("Loading…");
   summary.textContent = "";
   legend.replaceChildren();
   const loaded = await Promise.all(RUNS.filter((r) => files[r]).map(async (run) => ({ run, ...await runStats(cycle.root, files[run]) })));
   const runs = loaded.filter((r) => r.stats.length);
   if (request !== hydroToken) return;
   if (!runs.length) {
-    chart.textContent = "No readable series for this gauge.";
+    chart.textContent = gettext("No readable series for this gauge.");
     return;
   }
   chart.replaceChildren(hydrographSvg(runs, cycleTime(cycle.latest.cycle).getTime(), HYDRO_SIZE));
@@ -525,7 +528,7 @@ async function openHydrograph(cycle, gauge, files) {
     const item = element("li");
     const swatch = element("span", "swatch");
     swatch.style.background = RUN_STYLE[run].color;
-    item.append(swatch, `${RUN_STYLE[run].label}, ${members} members`);
+    item.append(swatch, fill(ngettext("%(run)s, %(count)s member", "%(run)s, %(count)s members", members), { run: RUN_STYLE[run].label, count: members }));
     return item;
   }));
 }
@@ -569,8 +572,8 @@ function showMissingCycle() {
   gaugeToken++;
   viewer.clearFeatures();
   viewer.clearGauges();
-  clearGaugeList(document.getElementById("gauge-buttons"), "No cycle for this hour.");
-  showNothing("No cycle was published for this hour, or it has expired.");
+  clearGaugeList(document.getElementById("gauge-buttons"), gettext("No cycle for this hour."));
+  showNothing(gettext("No cycle was published for this hour, or it has expired."));
 }
 
 /**

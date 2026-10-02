@@ -4,6 +4,7 @@
  * Uses the MapLibre global (maplibregl) loaded by the page.
  */
 
+import { fill, gettext } from "./i18n.js";
 import { SMALL_SCREEN } from "./config.js";
 import { element } from "./dom.js";
 import { gaugeLabel } from "./gauges.js";
@@ -17,7 +18,7 @@ const BLANK_STYLE = { version: 8, sources: {}, layers: [{ id: "background", type
 const FIT_MARGIN = 16;
 const MIN_VIEW = 120;
 const FIT_MS = 500;
-const BUSY_TEXT = { layer: "Loading layer…", overlay: "Loading layer…", tiles: "Loading base map…" };
+const BUSY_TEXT = { layer: gettext("Loading layer…"), overlay: gettext("Loading layer…"), tiles: gettext("Loading base map…") };
 const HOME_ICON = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M2 7.5 8 2l6 5.5"/><path d="M3.8 6.4V14h8.4V6.4"/><path d="M6.6 14v-3.6h2.8V14"/></svg>';
 
 /** A web map that shows one coloured raster and its legend. */
@@ -307,8 +308,8 @@ function homeButton(onClick) {
   const button = element("button");
   button.innerHTML = HOME_ICON;
   button.type = "button";
-  button.title = "Zoom to the country";
-  button.setAttribute("aria-label", "Zoom to the country");
+  button.title = gettext("Zoom to the country");
+  button.setAttribute("aria-label", gettext("Zoom to the country"));
   button.addEventListener("click", onClick);
   box.append(button);
   return box;
@@ -324,7 +325,7 @@ function gaugeButton(gauge, onSelect) {
   const button = element("button", "gauge-marker");
   button.type = "button";
   button.title = gaugeLabel(gauge.name);
-  button.setAttribute("aria-label", `Hydrograph for ${gaugeLabel(gauge.name)}`);
+  button.setAttribute("aria-label", fill(gettext("Hydrograph for %(gauge)s"), { gauge: gaugeLabel(gauge.name) }));
   button.addEventListener("click", (event) => {
     event.stopPropagation();
     onSelect(gauge);

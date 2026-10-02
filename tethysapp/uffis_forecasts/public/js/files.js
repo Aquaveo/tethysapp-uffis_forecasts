@@ -3,6 +3,7 @@
  * index.json, with a download link and a copy-URL button per file.
  */
 
+import { fill, gettext, ngettext, number } from "./i18n.js";
 import { copyButton, element } from "./dom.js";
 
 const UNITS = ["B", "KB", "MB", "GB"];
@@ -94,7 +95,7 @@ export function folderElement(folder, base, expand = false) {
     const summary = element("summary");
     summary.append(
       element("span", "name", `${name}/`),
-      element("span", "meta", `${child.count.toLocaleString("en")} files, ${formatBytes(child.size)}`),
+      element("span", "meta", fill(ngettext("%(count)s file, %(size)s", "%(count)s files, %(size)s", child.count), { count: number(child.count), size: formatBytes(child.size) })),
     );
     details.append(summary);
     if (expand) {
@@ -119,7 +120,7 @@ export function folderElement(folder, base, expand = false) {
  */
 function fileElement(file, url) {
   const item = element("li", "file");
-  const open = element("a", "action", "open");
+  const open = element("a", "action", gettext("open"));
   open.href = url;
   item.append(element("span", "name", file.name), element("span", "meta", formatBytes(file.size)), open, copyButton(url));
   return item;

@@ -3,6 +3,7 @@
  * the selected country and its newest cycle.
  */
 
+import { fill, gettext } from "./i18n.js";
 import { COUNTRIES } from "./config.js";
 import { copyButton, element } from "./dom.js";
 
@@ -20,7 +21,7 @@ export function accessUrls(base, country, cycle) {
     base,
     latest: `${base}/${country}/latest.json`,
     index: `${base}/${country}/${cycle}/index.json`,
-    file: `${base}/${country}/${cycle}/<path from index.json>`,
+    file: `${base}/${country}/${cycle}/<${gettext("path from index.json")}>`,
   };
 }
 
@@ -49,16 +50,16 @@ export function accessElement(urls, country) {
   const box = element("div", "access");
   const rows = element("dl");
   rows.append(
-    ...urlRow("Base URL", urls.base, false),
-    ...urlRow("Newest cycle", urls.latest, true),
-    ...urlRow("File list", urls.index, true),
-    ...urlRow("File URL", urls.file, false),
+    ...urlRow(gettext("Base URL"), urls.base, false),
+    ...urlRow(gettext("Newest cycle"), urls.latest, true),
+    ...urlRow(gettext("File list"), urls.index, true),
+    ...urlRow(gettext("File URL"), urls.file, false),
   );
   const notes = element("p", "detail",
-    `Countries: ${COUNTRIES.map((c) => c.key).join(", ")}. Kept about one day. Public, CORS enabled, no key needed.`);
+    fill(gettext("Countries: %(countries)s. Kept about one day. Public, CORS enabled, no key needed."), { countries: COUNTRIES.map((c) => c.key).join(", ") }));
   const code = element("pre");
   code.append(element("code", "", accessSnippet(urls.base, country)));
-  const notebook = element("a", "", "Open the checking notebook in Colab");
+  const notebook = element("a", "", gettext("Open the checking notebook in Colab"));
   notebook.href = NOTEBOOK;
   box.append(rows, notes, code, notebook);
   return box;
@@ -75,7 +76,7 @@ function urlRow(label, url, openable) {
   const value = element("dd");
   value.append(element("code", "", url));
   if (openable) {
-    const open = element("a", "action", "open");
+    const open = element("a", "action", gettext("open"));
     open.href = url;
     value.append(open);
   }

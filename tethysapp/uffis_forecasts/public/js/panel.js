@@ -3,6 +3,7 @@
  * freshness, and the selected country's warning service.
  */
 
+import { fill, gettext } from "./i18n.js";
 import { element } from "./dom.js";
 import { gaugeLabel } from "./gauges.js";
 import { ageLevel, ageMinutes, ageText } from "./status.js";
@@ -56,7 +57,7 @@ export function regionLevel(status, now) {
  * @returns {string}
  */
 export function regionNote(status, now) {
-  return status.error ? "no outputs found" : `published ${ageText(ageMinutes(status.published, now))}`;
+  return status.error ? gettext("no outputs found") : fill(gettext("published %(age)s"), { age: ageText(ageMinutes(status.published, now)) });
 }
 
 /**
