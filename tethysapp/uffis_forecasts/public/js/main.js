@@ -10,7 +10,7 @@ import { buildTree, filterFiles, folderElement, formatBytes } from "./files.js";
 import { RUNS, ensembleStats, gaugeFiles, parseGauges, parseSeries } from "./gauges.js";
 import { RUN_STYLE, hydrographSvg } from "./hydrograph.js";
 import { ViewerMap, gaugeLabel } from "./map.js";
-import { fillRegions, markRegions } from "./panel.js";
+import { agenciesByCountry, fillRegions, markRegions, showAgency } from "./panel.js";
 import { popupElement, riskSummary } from "./impact.js";
 import { chosenLayer, siteChoices } from "./layers.js";
 import { basinsOf, cycleTime, fetchJson, fetchOk, loadCycle, outputsBase, withoutCountry } from "./outputs.js";
@@ -23,6 +23,7 @@ const form = document.getElementById("controls");
 const info = document.getElementById("info");
 const filter = document.getElementById("file-filter");
 const regions = document.getElementById("regions");
+const agencies = agenciesByCountry(document);
 const viewer = new ViewerMap(document.getElementById("map"));
 const cycles = new Map();
 let drawToken = 0;
@@ -49,7 +50,9 @@ async function refreshStatus() {
  */
 function showSelectedStatus() {
   const key = form.country.value;
-  document.getElementById("viewer-title").textContent = COUNTRIES.find((c) => c.key === key).name;
+  const place = COUNTRIES.find((c) => c.key === key).name;
+  document.getElementById("viewer-title").textContent = place;
+  showAgency(document.getElementById("agency"), place, agencies[key]);
   const status = statuses.find((s) => s.key === key);
   if (status) document.getElementById("status").replaceChildren(statusCard(status, new Date()));
 }

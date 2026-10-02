@@ -16,6 +16,7 @@ const APP = join(ROOT, "tethysapp", "uffis_forecasts");
 const FIXTURES = join(ROOT, "tests", "fixtures");
 const STATIC = "/static/uffis_forecasts/";
 const DOWN_BASE = "http://127.0.0.1:9/outputs";
+const AGENCIES = '<script type="application/json" id="uffis-agencies">[{"country": "guatemala", "short": "INSIVUMEH", "name": "Instituto Nacional", "host": "insivumeh.uffis.org"}]</script>';
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".tif": "image/tiff" };
 const TIMEOUT_MS = 30000;
 
@@ -28,7 +29,7 @@ async function viewerPage(outputs) {
   const templates = join(APP, "templates", "uffis_forecasts");
   const assets = await readFile(join(templates, "assets.html"), "utf8");
   const viewer = await readFile(join(templates, "viewer.html"), "utf8");
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8">${assets}</head><body>${viewer.replaceAll("{{ outputs_base }}", outputs)}</body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8">${assets}</head><body>${viewer.replaceAll("{{ outputs_base }}", outputs)}${AGENCIES}</body></html>`;
 }
 
 /**
@@ -132,6 +133,8 @@ async function waitFor(evaluate, expression, what) {
 async function check(evaluate) {
   const card = await waitFor(evaluate, 'document.querySelector("#status .card")?.textContent', "status cards");
   if (!card.includes("1 of 1 flood sites triggered")) throw new Error(`Guatemala card: ${card}`);
+  const agency = await evaluate('document.getElementById("agency").textContent + " " + document.querySelector("#agency a")?.href');
+  if (!agency.startsWith("Warnings for Guatemala: INSIVUMEH portal https://insivumeh.uffis.org")) throw new Error(`agency line: ${agency}`);
   await waitFor(evaluate, 'document.getElementById("info").textContent.includes("qpeaccum") && document.getElementById("info").textContent.includes(" 7 cells shown")', "rainfall map with 7 cells");
   await waitFor(evaluate, 'document.getElementById("files-summary").textContent.startsWith("10 files")', "file tree with 10 files");
   await waitFor(evaluate, 'document.querySelectorAll(".leaflet-gauges-pane path").length === 1', "one gauge marker");

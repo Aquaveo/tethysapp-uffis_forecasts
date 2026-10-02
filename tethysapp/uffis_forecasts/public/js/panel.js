@@ -1,6 +1,6 @@
 /**
  * The floating control panel: region chips that carry each country's
- * freshness, and the selected country's title.
+ * freshness, and the selected country's warning service.
  */
 
 import { element } from "./dom.js";
@@ -59,4 +59,31 @@ export function markRegions(box, statuses, now) {
     chip.classList.remove(...LEVELS);
     chip.classList.add(regionLevel(status, now));
   }
+}
+
+/**
+ * Agencies the page lists, keyed by country, from the portal's JSON.
+ * Empty when the page carries none.
+ * @param {Document} doc
+ * @returns {Record<string, {short: string, name: string, host: string}>}
+ */
+export function agenciesByCountry(doc) {
+  const data = doc.getElementById("uffis-agencies");
+  const list = data ? JSON.parse(data.textContent) : [];
+  return Object.fromEntries(list.map((agency) => [agency.country, agency]));
+}
+
+/**
+ * Fill the line that links a country to its warning service.
+ * @param {HTMLElement} line
+ * @param {string} place country name
+ * @param {{short: string, name: string, host: string}|undefined} agency
+ */
+export function showAgency(line, place, agency) {
+  line.hidden = !agency;
+  if (!agency) return;
+  const link = element("a", "", `${agency.short} portal`);
+  link.href = `https://${agency.host}`;
+  link.title = agency.name;
+  line.replaceChildren(`Warnings for ${place}: `, link);
 }
