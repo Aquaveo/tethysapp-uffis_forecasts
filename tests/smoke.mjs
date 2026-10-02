@@ -20,6 +20,9 @@ const AGENCIES = '<script type="application/json" id="uffis-agencies">[{"country
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".tif": "image/tiff" };
 const TIMEOUT_MS = 30000;
 
+/** The page's map, from the entry module, inside an async expression. */
+const VIEWER = '(await import("/static/uffis_forecasts/js/main.js")).viewer';
+
 /**
  * The viewer page as the portal renders it, minus the portal frame.
  * @param {string} outputs outputs base URL for the page
@@ -106,7 +109,7 @@ async function openPage(devtools, url) {
     pending.set(++id, resolve);
     socket.send(JSON.stringify({ id, method, params }));
   });
-  const evaluate = async (expression) => (await send("Runtime.evaluate", { expression, returnByValue: true }))?.result?.value;
+  const evaluate = async (expression) => (await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true }))?.result?.value;
   return { evaluate, send, close: () => socket.close() };
 }
 
@@ -145,10 +148,12 @@ async function check(evaluate) {
   await checkTimeline(evaluate);
   await checkCountryZoom(evaluate);
   await waitFor(evaluate, 'document.getElementById("files-summary").textContent.startsWith("10 files")', "file tree with 10 files");
-  await waitFor(evaluate, 'document.querySelectorAll(".leaflet-gauges-pane path").length === 1', "one gauge marker");
+  await waitFor(evaluate, 'document.querySelectorAll(".gauge-marker").length === 1', "one gauge marker");
   await waitFor(evaluate, 'document.querySelectorAll("#gauge-buttons .gauge-btn").length === 1 && document.querySelector("#gauge-buttons .gauge-btn").textContent === "Test gauge"', "gauge list button");
-  await evaluate('(() => { const p = document.querySelector(".leaflet-gauges-pane path"); p.focus(); p.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })); })()');
-  await waitFor(evaluate, 'document.querySelectorAll("#hydro-chart path.median").length === 2 && document.getElementById("hydro-title").textContent === "Test gauge" && document.activeElement.id === "hydro-title"', "hydrograph opened from the keyboard");
+  const focusable = await evaluate('(() => { const p = document.querySelector(".gauge-marker"); p.focus(); return p.tagName === "BUTTON" && document.activeElement === p; })()');
+  if (!focusable) throw new Error("gauge marker is not a focusable button");
+  await evaluate('document.querySelector(".gauge-marker").click()');
+  await waitFor(evaluate, 'document.querySelectorAll("#hydro-chart path.median").length === 2 && document.getElementById("hydro-title").textContent === "Test gauge" && document.activeElement.id === "hydro-title"', "hydrograph opened from the marker");
   const summary = await evaluate('document.getElementById("hydro-summary").textContent');
   if (!summary.startsWith("Median peaks: Satellite rainfall (STREAM-SAT) 18.0 m³/s at 00:00 1 Jan; Forecast (StormLab) 29.0 m³/s")) throw new Error(`hydrograph summary: ${summary}`);
   const legend = await evaluate('document.getElementById("hydro-legend").textContent');
@@ -159,7 +164,7 @@ async function check(evaluate) {
   await evaluate('(() => { const f = document.getElementById("file-filter"); f.value = "prob_depth"; f.dispatchEvent(new Event("input")); })()');
   await waitFor(evaluate, 'document.getElementById("files-summary").textContent.startsWith("1 file matching") && [...document.querySelectorAll("#files a")].some((a) => a.href.endsWith("prob_depth_ge_10cm_overbank.20260101.000000.tif"))', "filtered tree with the flood raster link");
   await evaluate('(() => { const o = document.getElementById("opacity"); o.value = "40"; o.dispatchEvent(new Event("input")); })()');
-  await waitFor(evaluate, 'document.querySelector("img.raster")?.style.opacity === "0.4" && document.getElementById("opacity-value").textContent === "40%"', "raster at 40% opacity");
+  await waitFor(evaluate, `(async () => ${VIEWER}.map.getPaintProperty("forecast", "raster-opacity") === 0.4 && document.getElementById("opacity-value").textContent === "40%")()`, "raster at 40% opacity");
   const opacityTop = 'Math.round(document.getElementById("opacity").getBoundingClientRect().top)';
   const before = await evaluate(opacityTop);
   await evaluate('(() => { const g = document.querySelector("input[name=gauges]"); g.click(); })()');
@@ -173,7 +178,7 @@ async function check(evaluate) {
   await evaluate('document.querySelector("input[name=product][value=flood]").click()');
   await waitFor(evaluate, 'document.getElementById("info").textContent.includes("prob_depth_ge_10cm") && document.getElementById("info").textContent.includes(" 5 cells shown")', "flood map with 5 cells");
   await evaluate('document.querySelector("input[name=product][value=impact]").click()');
-  await waitFor(evaluate, 'document.getElementById("info").textContent.startsWith("Buildings at risk: 1 high, 2 medium, 5 low. People at low risk or worse: 42.") && document.querySelectorAll(".leaflet-overlay-pane path.leaflet-interactive").length === 1', "impact view with one municipality");
+  await waitFor(evaluate, `(async () => document.getElementById("info").textContent.startsWith("Buildings at risk: 1 high, 2 medium, 5 low. People at low risk or worse: 42.") && ${VIEWER}.features?.geojson.features.length === 1 && Boolean(${VIEWER}.map.getLayer("impact-fill")))()`, "impact view with one municipality");
 }
 
 /**
@@ -195,7 +200,7 @@ async function checkTimeline(evaluate) {
   await evaluate(`(() => { const back = document.querySelector('[data-step="-1"]'); back.click(); back.click(); })()`);
   await waitFor(evaluate, `${info}.startsWith("No cycle was published")`, "missing cycle after two quick steps");
   await new Promise((resolve) => setTimeout(resolve, 1500));
-  const settled = await evaluate(`${info}.startsWith("No cycle was published") && !document.querySelector("img.raster") && !document.querySelectorAll(".leaflet-gauges-pane path").length`);
+  const settled = await evaluate(`(async () => ${info}.startsWith("No cycle was published") && !${VIEWER}.map.getLayer("forecast") && !document.querySelectorAll(".gauge-marker").length)()`);
   if (!settled) throw new Error(`stale draw after quick steps: ${await evaluate(info)}`);
   await evaluate('document.getElementById("cycle-now").click()');
   await waitFor(evaluate, `${fileLink}.includes("/20260101.000000/")`, "latest cycle again");
@@ -216,7 +221,7 @@ async function checkTimeline(evaluate) {
  * @param {(expression: string) => Promise<any>} evaluate
  */
 async function checkCountryZoom(evaluate) {
-  const view = 'getComputedStyle(document.querySelector(".leaflet-proxy")).transform';
+  const view = `(async () => ${VIEWER}.map.getCenter().toArray().join())()`;
   const before = await evaluate(view);
   await evaluate('document.querySelector("input[name=country][value=haiti]").click()');
   await waitFor(evaluate, `${view} !== ${JSON.stringify(before)}`, "map moved to Haiti");

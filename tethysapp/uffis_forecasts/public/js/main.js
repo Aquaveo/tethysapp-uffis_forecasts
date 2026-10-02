@@ -14,7 +14,7 @@ import { agenciesByCountry, clearGaugeList, dimGaugeList, fillGauges, fillRegion
 import { popupElement, riskSummary } from "./impact.js";
 import { chosenLayer, siteChoices } from "./layers.js";
 import { basinsOf, cycleTime, fetchJson, fetchText, loadCycle, loadCycleAt, outputsBase, withoutCountry } from "./outputs.js";
-import { loadRaster, rasterBounds } from "./raster.js";
+import { loadRaster, rasterCorners } from "./raster.js";
 import { loadStatus, statusCard } from "./status.js";
 import { HOURS_BACK, clampOffset, shiftCycle, timeLabel } from "./timeline.js";
 
@@ -25,12 +25,12 @@ const info = document.getElementById("info");
 const filter = document.getElementById("file-filter");
 const regions = document.getElementById("regions");
 const agencies = agenciesByCountry(document);
-const viewer = new ViewerMap(document.getElementById("map"));
+export const viewer = new ViewerMap(document.getElementById("map"));
 const cycles = new Map();
 let drawToken = 0;
 let fittedKey = "";
 let filesCycle = null;
-viewer.addPanel(info, "bottomleft");
+viewer.addPanel(info, "bottom-left");
 let statuses = [];
 let gaugeToken = 0;
 let changeToken = 0;
@@ -43,6 +43,7 @@ const PLAY_STEP_MS = 900;
 const SPEEDS = [1, 2, 4, 0.5];
 let speed = 1;
 const HYDRO_SIZE = { width: 520, height: 220 };
+const NAV_INSET = 64;
 
 /**
  * Reload every country's status, colour the region chips and stamp
@@ -87,14 +88,38 @@ function togglePanel(button) {
 }
 
 /**
- * Keep --dock equal to the time bar's height, so map corners sit above it.
+ * Keep map corners and zooms clear of the time bar and the side panel.
  */
-function trackDockHeight() {
+function trackOverlays() {
   const root = document.getElementById("uffis-viewer");
   const bar = root.querySelector(".cycle-bar");
-  const update = () => root.style.setProperty("--dock", `${bar.offsetHeight}px`);
-  new ResizeObserver(update).observe(bar);
+  const panel = document.getElementById("panel");
+  const update = () => {
+    root.style.setProperty("--dock", `${bar.offsetHeight}px`);
+    viewer.setInsets(overlayInsets(bar, panel));
+  };
+  const observer = new ResizeObserver(update);
+  observer.observe(bar);
+  observer.observe(panel);
   update();
+}
+
+/**
+ * How far the navigation, time bar and a side panel reach into the map.
+ * @param {HTMLElement} bar
+ * @param {HTMLElement} panel
+ * @returns {{top: number, right: number, bottom: number, left: number}} pixels
+ */
+function overlayInsets(bar, panel) {
+  const dock = bar.getBoundingClientRect();
+  const side = panel.getBoundingClientRect();
+  const besideMap = !panel.hidden && side.width < window.innerWidth / 2;
+  return {
+    top: NAV_INSET,
+    right: besideMap ? window.innerWidth - side.left : 0,
+    bottom: dock.height ? window.innerHeight - dock.top : 0,
+    left: 0,
+  };
 }
 
 /**
@@ -348,7 +373,7 @@ async function drawImpact(cycle, layer, current) {
  */
 function showRaster(raster, legend, fit) {
   const classes = classifyCells(raster.values, legend.breaks, raster.nodata);
-  viewer.show(paintCells(classes, raster.width, raster.height, legend.colors), rasterBounds(raster.bbox, raster.epsg), fit);
+  viewer.show(paintCells(classes, raster.width, raster.height, legend.colors), rasterCorners(raster.bbox, raster.epsg), fit);
   return drawnCount(classes);
 }
 
@@ -634,7 +659,7 @@ function start() {
   small.addEventListener("change", (event) => {
     if (event.matches === !document.getElementById("panel").hidden) togglePanel(toggle);
   });
-  trackDockHeight();
+  trackOverlays();
   refresh();
   setInterval(refresh, REFRESH_MS);
 }

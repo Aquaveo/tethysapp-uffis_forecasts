@@ -41,7 +41,6 @@
 
 /* Map fills the page */
 .uffis-viewer .map { position: absolute; inset: 0; z-index: 0; }
-.uffis-viewer .raster { image-rendering: pixelated; }
 
 /* Map loader, shown after 250ms */
 .uffis-viewer .map-loader {
@@ -260,7 +259,23 @@
 }
 
 .uffis-viewer .gauge-btn:hover { border-color: var(--v-select); }
-.uffis-viewer .gauge-btn:focus-visible, .uffis-viewer .leaflet-gauges-pane path:focus-visible { outline: 3px solid var(--v-select); outline-offset: 2px; }
+.uffis-viewer .gauge-btn:focus-visible, .uffis-viewer .gauge-marker:focus-visible { outline: 3px solid var(--v-select); outline-offset: 2px; }
+
+/* Gauge marker on the map */
+.uffis-viewer .gauge-marker {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  background: #22d3ee;
+  border: 2px solid #111827;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(10, 20, 35, 0.35);
+  cursor: pointer;
+}
+
+/* Bigger hit area than dot */
+.uffis-viewer .gauge-marker::before { content: ""; position: absolute; inset: -8px; border-radius: 50%; }
 
 .uffis-viewer .check { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-weight: 600; cursor: pointer; }
 .uffis-viewer .check input { width: 16px; height: 16px; accent-color: var(--v-select); }
@@ -475,22 +490,10 @@
 .uffis-viewer .legend .row > *, .uffis-viewer .popup .row > * { width: auto; max-width: none; padding: 0; margin: 0; }
 .uffis-viewer .legend .row { display: flex; align-items: center; gap: 8px; }
 .uffis-viewer .legend .swatch { flex: none; width: 18px; height: 18px; border: 1px solid color-mix(in oklch, var(--v-ink) 20%, transparent); border-radius: 3px; }
-.uffis-viewer .leaflet-top.leaflet-left { top: 4px; }
-.uffis-viewer .leaflet-bottom.leaflet-left { bottom: 16px; }
+.uffis-viewer .maplibregl-ctrl-bottom-left { bottom: 6px; }
+.uffis-viewer .maplibregl-ctrl-group button { color: var(--v-ink); }
+.uffis-viewer .maplibregl-popup-content { padding: 10px 12px; border-radius: 10px; box-shadow: var(--v-shadow); }
 
-.uffis-viewer .home button {
-  display: block;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  color: var(--v-ink);
-  background: var(--v-surface);
-  border: 0;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.uffis-viewer .home button:hover { background: var(--v-page); }
 .uffis-viewer .home button svg { display: block; margin: auto; }
 
 /* Files sheet */
@@ -656,11 +659,10 @@
   .uffis-viewer .panel[hidden] ~ .cycle-bar, .uffis-viewer .panel[hidden] ~ .hydro { right: 8px; }
 
   /* Corners clear the dock */
-  .uffis-viewer .leaflet-bottom.leaflet-left, .uffis-viewer .leaflet-bottom.leaflet-right { bottom: calc(var(--dock, 0px) + 12px); }
-  .uffis-viewer .leaflet-bottom.leaflet-left .leaflet-control { margin-left: 8px; }
+  .uffis-viewer .maplibregl-ctrl-bottom-left, .uffis-viewer .maplibregl-ctrl-bottom-right { bottom: calc(var(--dock, 0px) + 2px); }
+  .uffis-viewer .maplibregl-ctrl-bottom-left .maplibregl-ctrl { margin-left: 8px; }
   .uffis-viewer .layer-info { max-width: calc(100vw - 16px); margin-bottom: 6px; }
   .uffis-viewer .layer-info.routine { display: none; }
-  .uffis-viewer .leaflet-control-attribution { font-size: 10px; }
   .uffis-viewer .legend { max-width: calc(100vw - 16px); padding: 8px 10px; font-size: 0.75rem; line-height: 1.35; }
   .uffis-viewer .legend .note { display: none; }
   .uffis-viewer .legend .swatch { width: 12px; height: 12px; }
@@ -703,7 +705,7 @@
   .uffis-viewer #cycle-play { width: 38px; }
   .uffis-viewer .wide-only { display: none; }
 
-  .uffis-viewer .leaflet-bottom.leaflet-left, .uffis-viewer .leaflet-bottom.leaflet-right { bottom: calc(var(--dock, 0px) + 12px); }
+  .uffis-viewer .maplibregl-ctrl-bottom-left, .uffis-viewer .maplibregl-ctrl-bottom-right { bottom: calc(var(--dock, 0px) + 2px); }
   .uffis-viewer .layer-info.routine { display: none; }
   .uffis-viewer .legend { padding: 8px 10px; font-size: 0.75rem; line-height: 1.35; }
   .uffis-viewer .legend .note { display: none; }
@@ -731,7 +733,7 @@
 
 /* Touch, short: pinch replaces zoom */
 @media (pointer: coarse) and (max-height: 500px) {
-  .uffis-viewer .leaflet-control-zoom { display: none; }
+  .uffis-viewer .maplibregl-ctrl-group:has(.maplibregl-ctrl-zoom-in) { display: none; }
 }
 
 /* Touch: 44px targets */
@@ -741,8 +743,8 @@
   .uffis-viewer .step, .uffis-viewer .gauge-btn, .uffis-viewer .float-btn, .uffis-viewer select,
   .uffis-viewer .panel-btn, .uffis-viewer .sheet-close button, .uffis-viewer .hydro-head button { min-height: 44px; }
   .uffis-viewer .check { min-height: 44px; }
-  .uffis-viewer .home button { width: 44px; height: 44px; line-height: 44px; }
-  .uffis-viewer .leaflet-touch .leaflet-bar a { width: 44px; height: 44px; line-height: 44px; }
+  .uffis-viewer .maplibregl-ctrl-group button { width: 44px; height: 44px; }
+  .uffis-viewer .gauge-marker::before { inset: -14px; }
   .uffis-viewer input[type="range"] { min-height: 44px; }
   .uffis-viewer select { font-size: 16px; }
   .uffis-viewer .legend-head { min-height: 32px; }

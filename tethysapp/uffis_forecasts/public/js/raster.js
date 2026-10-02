@@ -53,27 +53,28 @@ export function overviewIndex(sides, cap) {
 }
 
 /**
- * Corner coordinates of a raster as Leaflet [[south, west], [north, east]].
+ * A raster's corners as [lng, lat], clockwise from the top left.
  * Supports the CRSs TITO writes: EPSG:4326, EPSG:3857 and UTM zones
  * (EPSG:326xx, 327xx and their aliases).
  * @param {number[]} bbox [minX, minY, maxX, maxY] in the raster CRS
  * @param {number} epsg
  * @returns {number[][]}
  */
-export function rasterBounds([minX, minY, maxX, maxY], epsg) {
-  if (epsg === 4326) return [[minY, minX], [maxY, maxX]];
-  if (epsg === 3857) {
-    const [south, west] = mercatorToLatLng(minX, minY);
-    const [north, east] = mercatorToLatLng(maxX, maxY);
-    return [[south, west], [north, east]];
-  }
+export function rasterCorners([minX, minY, maxX, maxY], epsg) {
+  const toLngLat = lngLatOf(epsg);
+  return [[minX, maxY], [maxX, maxY], [maxX, minY], [minX, minY]].map(([x, y]) => toLngLat(x, y));
+}
+
+/**
+ * The conversion from a CRS's x and y to [lng, lat].
+ * @param {number} epsg
+ * @returns {(x: number, y: number) => number[]}
+ */
+function lngLatOf(epsg) {
+  if (epsg === 4326) return (x, y) => [x, y];
+  if (epsg === 3857) return (x, y) => mercatorToLatLng(x, y).reverse();
   const utm = utmZone(epsg);
-  if (utm) {
-    const corners = [[minX, minY], [minX, maxY], [maxX, minY], [maxX, maxY]].map(([x, y]) => utmToLatLng(x, y, ...utm));
-    const lats = corners.map((c) => c[0]);
-    const lngs = corners.map((c) => c[1]);
-    return [[Math.min(...lats), Math.min(...lngs)], [Math.max(...lats), Math.max(...lngs)]];
-  }
+  if (utm) return (x, y) => utmToLatLng(x, y, ...utm).reverse();
   throw new Error(`unsupported CRS EPSG:${epsg}`);
 }
 

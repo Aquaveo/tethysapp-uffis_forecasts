@@ -1,16 +1,18 @@
 /**
- * The Leaflet map: basemap, one product overlay at a time, and its legend.
- * Uses the Leaflet global (L) loaded by the page.
+ * The MapLibre map: vector basemap, one product overlay at a time under
+ * the place names, and its legend.
+ * Uses the MapLibre global (maplibregl) loaded by the page.
  */
 
 import { SMALL_SCREEN } from "./config.js";
 import { element } from "./dom.js";
 import { gaugeLabel } from "./gauges.js";
 
-const OSM_TILES = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-const OSM_CREDIT = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
-
-const FIT = { padding: [16, 16] };
+const BASEMAP = "https://tiles.openfreemap.org/styles/positron";
+const RASTER = "forecast";
+const FEATURES = "impact";
+const FIT_MARGIN = 16;
+const FIT_MS = 500;
 const BUSY_TEXT = { layer: "Loading layer…", overlay: "Loading layer…", tiles: "Loading base map…" };
 const HOME_ICON = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M2 7.5 8 2l6 5.5"/><path d="M3.8 6.4V14h8.4V6.4"/><path d="M6.6 14v-3.6h2.8V14"/></svg>';
 
@@ -22,90 +24,107 @@ export class ViewerMap {
   constructor(container) {
     this.busy = new Set();
     this.loader = this.addLoader(container);
-    this.map = L.map(container, { zoomSnap: 1 }).setView([15, -75], 4);
-    L.tileLayer(OSM_TILES, { maxZoom: 18, attribution: OSM_CREDIT })
-      .on("loading", () => this.setBusy("tiles", true))
-      .on("load", () => this.setBusy("tiles", false))
-      .addTo(this.map);
-    this.overlay = null;
-    this.features = null;
+    this.map = new maplibregl.Map({
+      container,
+      style: BASEMAP,
+      center: [-75, 15],
+      zoom: 3,
+      maxZoom: 18,
+      dragRotate: false,
+      touchPitch: false,
+      renderWorldCopies: false,
+      attributionControl: { compact: true },
+    });
+    this.map.touchZoomRotate.disableRotation();
+    const small = window.matchMedia(SMALL_SCREEN);
+    this.map.once("load", () => {
+      if (small.matches) container.querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show");
+    });
+    this.map.keyboard.disableRotation();
+    this.ready = new Promise((resolve) => this.map.once("load", resolve)).then(() => {
+      this.labels = this.map.getStyle().layers.find((layer) => layer.type === "symbol")?.id;
+    });
+    this.map.on("dataloading", () => this.setBusy("tiles", true));
+    this.map.on("idle", () => {
+      this.setBusy("tiles", false);
+      this.setBusy("overlay", false);
+    });
     this.opacity = 0.85;
     this.home = null;
-    this.gauges = null;
-    this.map.createPane("gauges").style.zIndex = 650;
-    this.addHomeButton();
-    const small = window.matchMedia(SMALL_SCREEN);
+    this.insets = { top: 0, right: 0, bottom: 0, left: 0 };
+    this.features = null;
+    this.popup = null;
+    this.markers = [];
+    this.map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-left");
+    this.map.addControl(homeControl(() => this.goHome()), "top-left");
+    this.map.on("click", `${FEATURES}-fill`, (event) => this.openPopup(event));
+    this.map.on("mouseenter", `${FEATURES}-fill`, () => { this.map.getCanvas().style.cursor = "pointer"; });
+    this.map.on("mouseleave", `${FEATURES}-fill`, () => { this.map.getCanvas().style.cursor = ""; });
     this.legendOpen = !small.matches;
     small.addEventListener("change", (event) => this.setLegendOpen(!event.matches));
-    this.legend = L.control({ position: "bottomleft" });
-    this.legend.onAdd = () => {
-      const box = element("div", "legend");
-      L.DomEvent.disableClickPropagation(box);
-      return box;
-    };
-    this.legend.addTo(this.map);
+    this.legend = element("div", "legend");
+    this.legend.hidden = true;
+    this.addPanel(this.legend, "bottom-left");
   }
 
   /**
-   * Replace the overlay with a new image.
+   * Replace the overlay image, keeping its layer under the place names.
    * @param {string} imageUrl
-   * @param {number[][]} bounds [[south, west], [north, east]]
+   * @param {number[][]} corners [lng, lat] of top left, top right, bottom right, bottom left
    * @param {boolean} fit zoom to the image
    */
-  show(imageUrl, bounds, fit) {
-    this.clear();
+  show(imageUrl, corners, fit) {
     this.setBusy("overlay", true);
-    this.overlay = L.imageOverlay(imageUrl, bounds, { opacity: this.opacity, className: "raster" })
-      .on("load error", () => this.setBusy("overlay", false))
-      .addTo(this.map);
-    if (fit) this.fit(bounds);
+    if (fit) this.fit(positionBounds(corners));
+    this.ready.then(() => {
+      const source = this.map.getSource(RASTER);
+      if (source) {
+        source.updateImage({ url: imageUrl, coordinates: corners });
+        return;
+      }
+      this.map.addSource(RASTER, { type: "image", url: imageUrl, coordinates: corners });
+      this.map.addLayer({
+        id: RASTER,
+        type: "raster",
+        source: RASTER,
+        paint: { "raster-opacity": this.opacity, "raster-resampling": "nearest", "raster-fade-duration": 0 },
+      }, this.map.getLayer(`${FEATURES}-fill`) ? `${FEATURES}-fill` : this.labels);
+    });
   }
 
   /**
    * Zoom to bounds and remember them for the home button.
-   * @param {L.LatLngBoundsExpression} bounds
+   * @param {number[][]} bounds [[south, west], [north, east]]
    */
   fit(bounds) {
     this.home = bounds;
-    this.map.fitBounds(bounds, FIT);
+    this.goHome();
   }
 
-  /** Zoom back to the last fitted layer. */
+  /** Zoom back to the last fitted bounds, clear of the overlays. */
   goHome() {
-    if (this.home) this.map.fitBounds(this.home, FIT);
-  }
-
-  /** Add a button under the zoom control that calls goHome. */
-  addHomeButton() {
-    const control = L.control({ position: "topleft" });
-    control.onAdd = () => {
-      const box = element("div", "leaflet-bar home");
-      const button = element("button");
-      button.innerHTML = HOME_ICON;
-      button.type = "button";
-      button.title = "Zoom to the country";
-      button.setAttribute("aria-label", "Zoom to the country");
-      button.addEventListener("click", () => this.goHome());
-      box.append(button);
-      L.DomEvent.disableClickPropagation(box);
-      return box;
-    };
-    control.addTo(this.map);
+    if (!this.home) return;
+    const { top, right, bottom, left } = this.insets;
+    const padding = { top: top + FIT_MARGIN, right: right + FIT_MARGIN, bottom: bottom + FIT_MARGIN, left: left + FIT_MARGIN };
+    this.map.fitBounds(lngLatBounds(this.home), { padding, duration: FIT_MS });
   }
 
   /**
-   * Show an existing element in a map corner, above the legend when
-   * both share the corner.
+   * Set how far floating panels cover each edge of the map.
+   * @param {{top: number, right: number, bottom: number, left: number}} insets pixels
+   */
+  setInsets(insets) {
+    this.insets = insets;
+  }
+
+  /**
+   * Show an existing element in a map corner, above earlier ones.
    * @param {HTMLElement} content
-   * @param {string} position Leaflet corner, e.g. bottomleft
+   * @param {string} position MapLibre corner, e.g. bottom-left
    */
   addPanel(content, position) {
-    const control = L.control({ position });
-    control.onAdd = () => {
-      L.DomEvent.disableClickPropagation(content);
-      return content;
-    };
-    control.addTo(this.map);
+    content.classList.add("maplibregl-ctrl");
+    this.map.addControl({ onAdd: () => content, onRemove: () => content.remove() }, position);
   }
 
   /**
@@ -114,14 +133,15 @@ export class ViewerMap {
    */
   setOpacity(opacity) {
     this.opacity = opacity;
-    if (this.overlay) this.overlay.setOpacity(opacity);
+    this.ready.then(() => {
+      if (this.map.getLayer(RASTER)) this.map.setPaintProperty(RASTER, "raster-opacity", opacity);
+    });
   }
 
   /** Remove the overlay, if any. */
   clear() {
-    if (this.overlay) this.overlay.remove();
-    this.overlay = null;
     this.setBusy("overlay", false);
+    this.ready.then(() => removeLayers(this.map, RASTER, [RASTER]));
   }
 
   /**
@@ -160,34 +180,54 @@ export class ViewerMap {
    */
   showFeatures(geojson, popup, fit) {
     this.clearFeatures();
-    this.features = L.geoJSON(geojson, {
-      style: (feature) => {
-        const color = feature.properties.risk_color || "#555555";
-        return { color, weight: 2, fillColor: color, fillOpacity: 0.3 };
-      },
-      onEachFeature: (feature, layer) => layer.bindPopup(() => popup(feature.properties)),
-    }).addTo(this.map);
-    if (fit) this.fit(this.features.getBounds());
+    this.features = { geojson, popup };
+    if (fit) this.fit(geojsonBounds(geojson));
+    this.ready.then(() => {
+      const color = ["coalesce", ["get", "risk_color"], "#555555"];
+      this.map.addSource(FEATURES, { type: "geojson", data: geojson, generateId: true });
+      this.map.addLayer({ id: `${FEATURES}-fill`, type: "fill", source: FEATURES, paint: { "fill-color": color, "fill-opacity": 0.3 } }, this.labels);
+      this.map.addLayer({ id: `${FEATURES}-line`, type: "line", source: FEATURES, paint: { "line-color": color, "line-width": 2 } }, this.labels);
+    });
   }
 
   /**
-   * Show gauges as markers that call onSelect when clicked.
+   * Open the popup for the clicked feature, from its original properties.
+   * @param {{features: {id: number}[], lngLat: object}} event
+   */
+  openPopup(event) {
+    const feature = this.features?.geojson.features[event.features[0].id];
+    if (!feature) return;
+    this.popup?.remove();
+    this.popup = new maplibregl.Popup({ maxWidth: "280px" })
+      .setLngLat(event.lngLat)
+      .setDOMContent(this.features.popup(feature.properties))
+      .addTo(this.map);
+  }
+
+  /** Remove the vector layer and its popup, if any. */
+  clearFeatures() {
+    this.popup?.remove();
+    this.popup = null;
+    this.features = null;
+    this.ready.then(() => removeLayers(this.map, FEATURES, [`${FEATURES}-line`, `${FEATURES}-fill`]));
+  }
+
+  /**
+   * Show gauges as marker buttons that call onSelect when pressed.
    * @param {{name: string, lat: number, lon: number}[]} gauges
    * @param {(gauge: {name: string, lat: number, lon: number}) => void} onSelect
    */
   showGauges(gauges, onSelect) {
     this.clearGauges();
-    const markers = gauges.map((gauge) => L.circleMarker([gauge.lat, gauge.lon], {
-      pane: "gauges", radius: 7, weight: 2, color: "#111827", fillColor: "#22d3ee", fillOpacity: 1,
-    }).bindTooltip(gaugeLabel(gauge.name)).on("click", () => onSelect(gauge)));
-    this.gauges = L.layerGroup(markers).addTo(this.map);
-    markers.forEach((marker, i) => focusable(marker.getElement(), gauges[i], () => onSelect(gauges[i])));
+    this.markers = gauges.map((gauge) => new maplibregl.Marker({ element: gaugeButton(gauge, onSelect) })
+      .setLngLat([gauge.lon, gauge.lat])
+      .addTo(this.map));
   }
 
   /** Remove the gauge markers, if any. */
   clearGauges() {
-    if (this.gauges) this.gauges.remove();
-    this.gauges = null;
+    this.markers.forEach((marker) => marker.remove());
+    this.markers = [];
   }
 
   /**
@@ -210,15 +250,8 @@ export class ViewerMap {
    */
   setLegendOpen(open) {
     this.legendOpen = open;
-    const box = this.legend.getContainer();
-    box.classList.toggle("compact", !open);
-    box.querySelector(".legend-head")?.setAttribute("aria-expanded", String(open));
-  }
-
-  /** Remove the vector layer, if any. */
-  clearFeatures() {
-    if (this.features) this.features.remove();
-    this.features = null;
+    this.legend.classList.toggle("compact", !open);
+    this.legend.querySelector(".legend-head")?.setAttribute("aria-expanded", String(open));
   }
 
   /**
@@ -227,7 +260,7 @@ export class ViewerMap {
    * @param {string} [note] line under the title, e.g. the statistic shown
    */
   setLegend(legend, note) {
-    const box = this.legend.getContainer();
+    const box = this.legend;
     box.replaceChildren();
     box.hidden = !legend;
     if (!legend) return;
@@ -246,18 +279,90 @@ export class ViewerMap {
 }
 
 /**
- * Let a gauge marker take keyboard focus and open on Enter or Space.
- * @param {SVGElement} marker the marker's path
- * @param {{name: string}} gauge
- * @param {() => void} open
+ * A map control with one button that zooms back to the country.
+ * @param {() => void} onClick
+ * @returns {{onAdd: () => HTMLElement, onRemove: () => void}}
  */
-function focusable(marker, gauge, open) {
-  marker.setAttribute("tabindex", "0");
-  marker.setAttribute("role", "button");
-  marker.setAttribute("aria-label", `Hydrograph for ${gaugeLabel(gauge.name)}`);
-  marker.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    event.preventDefault();
-    open();
+function homeControl(onClick) {
+  const box = element("div", "maplibregl-ctrl maplibregl-ctrl-group home");
+  const button = element("button");
+  button.innerHTML = HOME_ICON;
+  button.type = "button";
+  button.title = "Zoom to the country";
+  button.setAttribute("aria-label", "Zoom to the country");
+  button.addEventListener("click", onClick);
+  box.append(button);
+  return { onAdd: () => box, onRemove: () => box.remove() };
+}
+
+/**
+ * A gauge marker as a button that opens its hydrograph.
+ * @param {{name: string}} gauge
+ * @param {(gauge: object) => void} onSelect
+ * @returns {HTMLButtonElement}
+ */
+function gaugeButton(gauge, onSelect) {
+  const button = element("button", "gauge-marker");
+  button.type = "button";
+  button.title = gaugeLabel(gauge.name);
+  button.setAttribute("aria-label", `Hydrograph for ${gaugeLabel(gauge.name)}`);
+  button.addEventListener("click", (event) => {
+    event.stopPropagation();
+    onSelect(gauge);
   });
+  return button;
+}
+
+/**
+ * Remove a source and its layers when present.
+ * @param {object} map MapLibre map
+ * @param {string} source
+ * @param {string[]} layers
+ */
+function removeLayers(map, source, layers) {
+  layers.forEach((id) => { if (map.getLayer(id)) map.removeLayer(id); });
+  if (map.getSource(source)) map.removeSource(source);
+}
+
+/**
+ * Leaflet-style bounds as MapLibre [[west, south], [east, north]].
+ * @param {number[][]} bounds [[south, west], [north, east]]
+ * @returns {number[][]}
+ */
+export function lngLatBounds([[south, west], [north, east]]) {
+  return [[west, south], [east, north]];
+}
+
+/**
+ * The bounding box of [lng, lat] positions.
+ * @param {number[][]} positions
+ * @returns {number[][]} [[south, west], [north, east]]
+ */
+export function positionBounds(positions) {
+  let [south, west, north, east] = [Infinity, Infinity, -Infinity, -Infinity];
+  for (const [lng, lat] of positions) {
+    south = Math.min(south, lat);
+    north = Math.max(north, lat);
+    west = Math.min(west, lng);
+    east = Math.max(east, lng);
+  }
+  return [[south, west], [north, east]];
+}
+
+/**
+ * The bounding box of every position in a FeatureCollection.
+ * @param {{features: {geometry: {coordinates: any}}[]}} geojson
+ * @returns {number[][]} [[south, west], [north, east]]
+ */
+export function geojsonBounds(geojson) {
+  return positionBounds(geojson.features.flatMap((feature) => positionsOf(feature.geometry.coordinates)));
+}
+
+/**
+ * Flatten nested GeoJSON coordinates to their positions.
+ * @param {any[]} coordinates
+ * @returns {number[][]}
+ */
+function positionsOf(coordinates) {
+  return typeof coordinates[0] === "number" ? [coordinates] : coordinates.flatMap(positionsOf);
 }
