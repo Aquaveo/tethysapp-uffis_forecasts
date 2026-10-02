@@ -195,10 +195,11 @@
 
 /* Hydrograph panel */
 .uffis-viewer .hydro {
-  left: 50%;
+  left: 224px;
+  right: 314px;
   bottom: 24px;
-  transform: translateX(-50%);
-  width: max(320px, min(560px, calc(100% - 560px)));
+  max-width: 560px;
+  margin-inline: auto;
   padding: 10px 14px 12px;
   background: var(--surface);
 }
@@ -230,6 +231,8 @@
 .uffis-viewer .hydro-summary { margin: 6px 0 0; font-size: 0.82rem; font-weight: 600; }
 .uffis-viewer .hydro-note { margin: 6px 0 0; color: var(--muted); font-size: 0.72rem; }
 .uffis-viewer .hydro { bottom: 180px; }
+.uffis-viewer .panel[hidden] ~ .cycle-bar, .uffis-viewer .panel[hidden] ~ .hydro { right: 224px; }
+
 
 .uffis-viewer .opacity { display: grid; gap: 4px; margin-top: 8px; font-weight: 600; }
 .uffis-viewer .opacity span { display: flex; justify-content: space-between; }
@@ -272,12 +275,13 @@
 .uffis-viewer .detail.alert { color: var(--accent); font-weight: 600; padding: 0; margin: 1px 0; border: 0; border-radius: 0; }
 
 /* Cycle bar */
+/* Between legend and panel */
 .uffis-viewer .cycle-bar {
   bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(600px, calc(100% - 560px));
-  min-width: 420px;
+  left: 224px;
+  right: 314px;
+  max-width: 600px;
+  margin-inline: auto;
   padding: 10px 16px 12px;
   background: var(--dark-glass);
   color: #f3f5f8;
@@ -456,6 +460,13 @@
 .uffis-viewer .popup .row { display: flex; justify-content: space-between; gap: 12px; }
 .uffis-viewer .popup .label { color: #5b6675; }
 
+/* Tablets: time bar on top */
+@media (min-width: 641px) and (max-width: 1099px) {
+  .uffis-viewer .cycle-bar { top: 72px; bottom: auto; left: 56px; right: 314px; max-width: none; margin: 0; }
+  .uffis-viewer .hydro { left: 12px; right: 314px; bottom: 12px; max-width: none; margin: 0; }
+  .uffis-viewer .panel[hidden] ~ .cycle-bar, .uffis-viewer .panel[hidden] ~ .hydro { right: 12px; }
+}
+
 /* Phones: panel becomes a bottom sheet */
 @media (max-width: 640px) {
   .uffis-viewer .panel {
@@ -470,21 +481,35 @@
   .uffis-viewer .panel:not([hidden]) ~ .cycle-bar { display: none; }
   .uffis-viewer .toggle { padding: 7px 10px; font-size: 0.8rem; }
   .uffis-viewer .cycle-bar {
-    top: 56px;
+    top: 72px;
     bottom: auto;
     left: 56px;
     right: 8px;
-    width: auto;
-    min-width: 0;
-    transform: none;
+    max-width: none;
+    margin: 0;
     padding: 6px 10px 8px;
     font-size: 0.75rem;
   }
   .uffis-viewer .time-label { margin-bottom: 4px; font-size: 0.85rem; }
   .uffis-viewer .wide-only, .uffis-viewer .cycle-bar .info { display: none; }
-  .uffis-viewer .hydro { left: 8px; right: 8px; bottom: 8px; width: auto; transform: none; z-index: 600; }
+  .uffis-viewer .hydro { left: 8px; right: 8px; bottom: 8px; max-width: none; margin: 0; z-index: 600; }
+  .uffis-viewer .panel[hidden] ~ .cycle-bar, .uffis-viewer .panel[hidden] ~ .hydro { right: 8px; }
   .uffis-viewer .legend { padding: 6px 8px; font-size: 0.7rem; line-height: 1.35; }
   .uffis-viewer .legend .note { display: none; }
   .uffis-viewer .legend .swatch { width: 12px; height: 12px; }
   .uffis-viewer .access dl { grid-template-columns: 1fr; }
+}
+
+/* Touch: 44px targets */
+@media (pointer: coarse) {
+  .uffis-viewer .option span, .uffis-viewer .chip span { display: flex; align-items: center; min-height: 44px; }
+  .uffis-viewer .chip span { justify-content: center; }
+  .uffis-viewer .step, .uffis-viewer .gauge-btn, .uffis-viewer .float-btn, .uffis-viewer select,
+  .uffis-viewer .panel-btn, .uffis-viewer .sheet-close button, .uffis-viewer .hydro-head button { min-height: 44px; }
+  .uffis-viewer .check { min-height: 44px; }
+  .uffis-viewer .home button { width: 44px; height: 44px; line-height: 44px; }
+  .uffis-viewer .leaflet-touch .leaflet-bar a { width: 44px; height: 44px; line-height: 44px; }
+  .uffis-viewer input[type="range"] { min-height: 44px; }
+  .uffis-viewer .panel { top: 76px; }
+  .uffis-viewer .cycle-bar { left: 68px; }
 }
