@@ -9,6 +9,7 @@ const OSM_TILES = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 const OSM_CREDIT = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 const FIT = { padding: [16, 16] };
+const HOME_ICON = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M2 7.5 8 2l6 5.5"/><path d="M3.8 6.4V14h8.4V6.4"/><path d="M6.6 14v-3.6h2.8V14"/></svg>';
 
 /** A web map that shows one coloured raster and its legend. */
 export class ViewerMap {
@@ -16,7 +17,7 @@ export class ViewerMap {
    * @param {HTMLElement} container
    */
   constructor(container) {
-    this.map = L.map(container, { zoomSnap: 0.5 }).setView([15, -75], 4);
+    this.map = L.map(container, { zoomSnap: 1 }).setView([15, -75], 4);
     L.tileLayer(OSM_TILES, { maxZoom: 18, attribution: OSM_CREDIT }).addTo(this.map);
     this.overlay = null;
     this.features = null;
@@ -61,7 +62,8 @@ export class ViewerMap {
     const control = L.control({ position: "topleft" });
     control.onAdd = () => {
       const box = element("div", "leaflet-bar home");
-      const button = element("button", "", "⌂");
+      const button = element("button");
+      button.innerHTML = HOME_ICON;
       button.type = "button";
       button.title = "Zoom to the country";
       button.setAttribute("aria-label", "Zoom to the country");
