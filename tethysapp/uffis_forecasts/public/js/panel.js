@@ -91,18 +91,18 @@ export function agenciesByCountry(doc) {
 }
 
 /**
- * Fill the line that links a country to its warning service.
+ * Fill the line that links a country to its warning service. The
+ * panel title already names the country, so the line stays short.
  * @param {HTMLElement} line
- * @param {string} place country name
  * @param {{short: string, name: string, host: string}|undefined} agency
  */
-export function showAgency(line, place, agency) {
+export function showAgency(line, agency) {
   line.hidden = !agency;
   if (!agency) return;
   const link = element("a", "", `${agency.short} portal`);
   link.href = `https://${agency.host}`;
   link.title = agency.name;
-  line.replaceChildren(`Warnings for ${place}: `, link);
+  line.replaceChildren("Warnings: ", link);
 }
 
 /**
@@ -112,20 +112,31 @@ export function showAgency(line, place, agency) {
  * @param {(gauge: {name: string}) => void} onSelect
  */
 export function fillGauges(box, gauges, onSelect) {
+  box.classList.remove("loading");
   box.replaceChildren(...gauges.map((gauge) => {
     const button = element("button", "gauge-btn", gaugeLabel(gauge.name));
     button.type = "button";
     button.addEventListener("click", () => onSelect(gauge));
     return button;
   }));
-  box.closest("fieldset").hidden = !gauges.length;
 }
 
 /**
- * Empty and hide the gauge list.
+ * Replace the gauge list with a short reason it is empty.
+ * @param {HTMLElement} box
+ * @param {string} message
+ */
+export function clearGaugeList(box, message) {
+  box.classList.remove("loading");
+  box.replaceChildren(element("p", "detail", message));
+}
+
+/**
+ * Dim and disable the current gauge list while the next one loads,
+ * so the panel keeps its height.
  * @param {HTMLElement} box
  */
-export function clearGaugeList(box) {
-  box.replaceChildren();
-  box.closest("fieldset").hidden = true;
+export function dimGaugeList(box) {
+  box.classList.add("loading");
+  for (const button of box.querySelectorAll("button")) button.disabled = true;
 }

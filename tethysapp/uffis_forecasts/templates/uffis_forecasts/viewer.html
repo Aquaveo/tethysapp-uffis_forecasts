@@ -51,16 +51,16 @@
         <div id="regions" class="chips"></div>
       </fieldset>
 
-      <label class="check"><input type="checkbox" name="gauges" checked> Gauge discharge</label>
-      <fieldset class="gauges" hidden>
-        <legend>Gauges</legend>
-        <div id="gauge-buttons" class="gauge-buttons"></div>
-      </fieldset>
-
       <label class="opacity">
         <span>Opacity <output id="opacity-value" for="opacity">85%</output></span>
         <input id="opacity" type="range" name="opacity" min="0" max="100" value="85">
       </label>
+
+      <fieldset class="gauges">
+        <legend>Gauges</legend>
+        <label class="check"><input type="checkbox" name="gauges" checked> Gauge discharge</label>
+        <div id="gauge-buttons" class="gauge-buttons" aria-live="polite"><p class="detail">Loading…</p></div>
+      </fieldset>
     </form>
 
     <button id="open-files" class="panel-btn" type="button">Files and data access</button>

@@ -10,7 +10,7 @@ import { buildTree, filterFiles, folderElement, formatBytes } from "./files.js";
 import { RUNS, ensembleStats, gaugeFiles, gaugeLabel, parseGauges, parseSeries } from "./gauges.js";
 import { RUN_STYLE, hydrographSummary, hydrographSvg } from "./hydrograph.js";
 import { ViewerMap } from "./map.js";
-import { agenciesByCountry, clearGaugeList, fillGauges, fillRegions, markRegions, showAgency } from "./panel.js";
+import { agenciesByCountry, clearGaugeList, dimGaugeList, fillGauges, fillRegions, markRegions, showAgency } from "./panel.js";
 import { popupElement, riskSummary } from "./impact.js";
 import { chosenLayer, siteChoices } from "./layers.js";
 import { basinsOf, cycleTime, fetchJson, fetchText, loadCycle, loadCycleAt, outputsBase, withoutCountry } from "./outputs.js";
@@ -63,7 +63,7 @@ function showSelectedStatus() {
   const key = form.country.value;
   const place = COUNTRIES.find((c) => c.key === key).name;
   document.getElementById("viewer-title").textContent = place;
-  showAgency(document.getElementById("agency"), place, agencies[key]);
+  showAgency(document.getElementById("agency"), agencies[key]);
   const status = statuses.find((s) => s.key === key);
   if (status) document.getElementById("status").replaceChildren(statusCard(status, new Date()));
 }
@@ -415,11 +415,17 @@ async function showGauges(cycle) {
   const token = ++gaugeToken;
   const list = document.getElementById("gauge-buttons");
   viewer.clearGauges();
-  clearGaugeList(list);
-  if (!form.gauges.checked) return;
+  if (!form.gauges.checked) {
+    clearGaugeList(list, "Gauge markers are off.");
+    return;
+  }
   const grids = gaugeFiles(cycle.paths);
   const grid = grids[form.basin.value] ? form.basin.value : Object.keys(grids)[0];
-  if (!grid || !grids[grid].control) return;
+  if (!grid || !grids[grid].control) {
+    clearGaugeList(list, "No gauge series for this country.");
+    return;
+  }
+  dimGaugeList(list);
   try {
     const url = `${cycle.root}/${grids[grid].control}`;
     const text = await cached(url, () => fetchText(url));
@@ -427,9 +433,12 @@ async function showGauges(cycle) {
     const located = parseGauges(text).filter((g) => grids[grid].gauges[g.name]);
     const open = (gauge) => openHydrograph(cycle, gauge, grids[grid].gauges[gauge.name]);
     viewer.showGauges(located, open);
-    fillGauges(list, located, open);
+    if (located.length) fillGauges(list, located, open);
+    else clearGaugeList(list, "No gauge series for this country.");
   } catch (error) {
-    if (token === gaugeToken) showError(error);
+    if (token !== gaugeToken) return;
+    clearGaugeList(list, "Gauges could not be loaded.");
+    showError(error);
   }
 }
 
@@ -525,7 +534,7 @@ function showMissingCycle() {
   gaugeToken++;
   viewer.clearFeatures();
   viewer.clearGauges();
-  clearGaugeList(document.getElementById("gauge-buttons"));
+  clearGaugeList(document.getElementById("gauge-buttons"), "No cycle for this hour.");
   showNothing("No cycle was published for this hour, or it has expired.");
 }
 

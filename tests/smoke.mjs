@@ -136,7 +136,7 @@ async function check(evaluate) {
   const region = await evaluate('document.querySelector("#regions .chip").title');
   if (!region.startsWith("Guatemala, published")) throw new Error(`region note: ${region}`);
   const agency = await evaluate('document.getElementById("agency").textContent + " " + document.querySelector("#agency a")?.href');
-  if (!agency.startsWith("Warnings for Guatemala: INSIVUMEH portal https://insivumeh.uffis.org")) throw new Error(`agency line: ${agency}`);
+  if (!agency.startsWith("Warnings: INSIVUMEH portal https://insivumeh.uffis.org")) throw new Error(`agency line: ${agency}`);
   await waitFor(evaluate, 'document.getElementById("info").textContent.includes("qpeaccum") && document.getElementById("info").textContent.includes(" 7 cells shown")', "rainfall map with 7 cells");
   await checkTimeline(evaluate);
   await waitFor(evaluate, 'document.getElementById("files-summary").textContent.startsWith("10 files")', "file tree with 10 files");
@@ -155,6 +155,13 @@ async function check(evaluate) {
   await waitFor(evaluate, 'document.getElementById("files-summary").textContent.startsWith("1 file matching") && [...document.querySelectorAll("#files a")].some((a) => a.href.endsWith("prob_depth_ge_10cm_overbank.20260101.000000.tif"))', "filtered tree with the flood raster link");
   await evaluate('(() => { const o = document.getElementById("opacity"); o.value = "40"; o.dispatchEvent(new Event("input")); })()');
   await waitFor(evaluate, 'document.querySelector("img.raster")?.style.opacity === "0.4" && document.getElementById("opacity-value").textContent === "40%"', "raster at 40% opacity");
+  const opacityTop = 'Math.round(document.getElementById("opacity").getBoundingClientRect().top)';
+  const before = await evaluate(opacityTop);
+  await evaluate('(() => { const g = document.querySelector("input[name=gauges]"); g.click(); })()');
+  await waitFor(evaluate, 'document.getElementById("gauge-buttons").textContent === "Gauge markers are off."', "gauges off message");
+  if (await evaluate(opacityTop) !== before) throw new Error("opacity slider moved when gauges were switched off");
+  await evaluate('(() => { const g = document.querySelector("input[name=gauges]"); g.click(); })()');
+  await waitFor(evaluate, 'document.querySelectorAll("#gauge-buttons .gauge-btn").length === 1', "gauge list back");
   await evaluate('document.getElementById("open-files").click()');
   await waitFor(evaluate, 'document.getElementById("files-panel").open', "files sheet open");
   await evaluate('document.getElementById("files-panel").close()');
