@@ -659,6 +659,8 @@
   .uffis-viewer .leaflet-bottom.leaflet-left, .uffis-viewer .leaflet-bottom.leaflet-right { bottom: calc(var(--dock, 0px) + 12px); }
   .uffis-viewer .leaflet-bottom.leaflet-left .leaflet-control { margin-left: 8px; }
   .uffis-viewer .layer-info { max-width: calc(100vw - 16px); margin-bottom: 6px; }
+  .uffis-viewer .layer-info.routine { display: none; }
+  .uffis-viewer .leaflet-control-attribution { font-size: 10px; }
   .uffis-viewer .legend { max-width: calc(100vw - 16px); padding: 8px 10px; font-size: 0.75rem; line-height: 1.35; }
   .uffis-viewer .legend .note { display: none; }
   .uffis-viewer .legend .swatch { width: 12px; height: 12px; }
@@ -702,6 +704,7 @@
   .uffis-viewer .wide-only { display: none; }
 
   .uffis-viewer .leaflet-bottom.leaflet-left, .uffis-viewer .leaflet-bottom.leaflet-right { bottom: calc(var(--dock, 0px) + 12px); }
+  .uffis-viewer .layer-info.routine { display: none; }
   .uffis-viewer .legend { padding: 8px 10px; font-size: 0.75rem; line-height: 1.35; }
   .uffis-viewer .legend .note { display: none; }
   .uffis-viewer .legend .swatch { width: 12px; height: 12px; }

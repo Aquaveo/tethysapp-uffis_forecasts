@@ -34,7 +34,9 @@ export class ViewerMap {
     this.gauges = null;
     this.map.createPane("gauges").style.zIndex = 650;
     this.addHomeButton();
-    this.legendOpen = !window.matchMedia(SMALL_SCREEN).matches;
+    const small = window.matchMedia(SMALL_SCREEN);
+    this.legendOpen = !small.matches;
+    small.addEventListener("change", (event) => this.setLegendOpen(!event.matches));
     this.legend = L.control({ position: "bottomleft" });
     this.legend.onAdd = () => {
       const box = element("div", "legend");
@@ -198,12 +200,19 @@ export class ViewerMap {
     head.type = "button";
     head.setAttribute("aria-expanded", String(this.legendOpen));
     head.append(element("strong", "", title));
-    head.addEventListener("click", () => {
-      this.legendOpen = !this.legendOpen;
-      head.setAttribute("aria-expanded", String(this.legendOpen));
-      this.legend.getContainer().classList.toggle("compact", !this.legendOpen);
-    });
+    head.addEventListener("click", () => this.setLegendOpen(!this.legendOpen));
     return head;
+  }
+
+  /**
+   * Unfold the legend, or fold it to its colour ramp.
+   * @param {boolean} open
+   */
+  setLegendOpen(open) {
+    this.legendOpen = open;
+    const box = this.legend.getContainer();
+    box.classList.toggle("compact", !open);
+    box.querySelector(".legend-head")?.setAttribute("aria-expanded", String(open));
   }
 
   /** Remove the vector layer, if any. */

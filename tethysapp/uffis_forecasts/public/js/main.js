@@ -308,6 +308,7 @@ async function drawLayer(current) {
   fittedKey = layer.key;
   viewer.setLegend(legend, layer.note);
   setInfo(`${productName(layer.path)} · ${shown.toLocaleString("en")} cells shown `, openLink(`${cycle.root}/${layer.path}`, "open file"));
+  info.classList.add("routine");
 }
 
 /**
@@ -374,7 +375,7 @@ function startLoading() {
  * @param {...(string|Node)} parts
  */
 function setInfo(...parts) {
-  info.classList.remove("loading");
+  info.classList.remove("loading", "routine");
   viewer.setBusy("layer", false);
   info.replaceChildren(...parts);
 }
@@ -628,7 +629,11 @@ function start() {
   });
   toggleControls();
   updateTimeButtons();
-  if (window.matchMedia(SMALL_SCREEN).matches) togglePanel(toggle);
+  const small = window.matchMedia(SMALL_SCREEN);
+  if (small.matches) togglePanel(toggle);
+  small.addEventListener("change", (event) => {
+    if (event.matches === !document.getElementById("panel").hidden) togglePanel(toggle);
+  });
   trackDockHeight();
   refresh();
   setInterval(refresh, REFRESH_MS);

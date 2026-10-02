@@ -253,6 +253,7 @@ async function checkPhone({ evaluate, send }) {
       barFits: bar.left >= 0 && bar.right <= innerWidth,
       docked: innerHeight - bar.bottom <= 16,
       clear: legend.bottom <= bar.top,
+      noteQuiet: getComputedStyle(document.getElementById("info")).display === "none",
     });
   })()`));
   const broken = Object.entries(layout).filter(([, ok]) => !ok).map(([name]) => name);
