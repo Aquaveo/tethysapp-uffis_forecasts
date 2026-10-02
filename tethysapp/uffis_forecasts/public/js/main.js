@@ -33,6 +33,9 @@ let filesCycle = null;
 viewer.addPanel(info, "bottomleft");
 let statuses = [];
 let gaugeToken = 0;
+let changeToken = 0;
+let hydroToken = 0;
+let playRun = 0;
 let offset = 0;
 let playing = false;
 const slider = document.getElementById("cycle-slider");
@@ -198,16 +201,18 @@ function setPlaying(button, on) {
 
 /**
  * Step through the kept cycles up to the latest while playing.
- * Each step waits for its map to draw.
+ * Each step waits for its map to draw. A newer run supersedes it.
  * @param {HTMLButtonElement} button
  */
 async function playCycles(button) {
+  const run = ++playRun;
+  const current = () => playing && run === playRun;
   if (offset === 0) await setOffset(-HOURS_BACK);
-  while (playing && offset < 0) {
+  while (current() && offset < 0) {
     await new Promise((resolve) => setTimeout(resolve, PLAY_STEP_MS / speed));
-    if (playing) await setOffset(offset + 1);
+    if (current()) await setOffset(offset + 1);
   }
-  if (playing) setPlaying(button, false);
+  if (current()) setPlaying(button, false);
 }
 
 /**
@@ -217,6 +222,7 @@ async function playCycles(button) {
 function togglePlay(button) {
   setPlaying(button, !playing);
   if (playing) playCycles(button);
+  else playRun++;
 }
 
 /**
@@ -453,8 +459,8 @@ async function openHydrograph(cycle, gauge, files) {
   const panel = document.getElementById("hydrograph");
   const chart = document.getElementById("hydro-chart");
   const legend = document.getElementById("hydro-legend");
+  const request = ++hydroToken;
   panel.hidden = false;
-  panel.dataset.gauge = gauge.name;
   const title = document.getElementById("hydro-title");
   const summary = document.getElementById("hydro-summary");
   title.textContent = gaugeLabel(gauge.name);
@@ -464,7 +470,7 @@ async function openHydrograph(cycle, gauge, files) {
   legend.replaceChildren();
   const loaded = await Promise.all(RUNS.filter((r) => files[r]).map(async (run) => ({ run, ...await runStats(cycle.root, files[run]) })));
   const runs = loaded.filter((r) => r.stats.length);
-  if (panel.dataset.gauge !== gauge.name) return;
+  if (request !== hydroToken) return;
   if (!runs.length) {
     chart.textContent = "No readable series for this gauge.";
     return;
@@ -486,24 +492,24 @@ async function openHydrograph(cycle, gauge, files) {
 function closeHydrograph() {
   const panel = document.getElementById("hydrograph");
   panel.hidden = true;
-  delete panel.dataset.gauge;
+  hydroToken++;
 }
 
 /**
- * React to a country change: new cycle, new options, redraw.
- * Gives up when another country was picked meanwhile.
+ * React to a country or cycle change: new cycle, new options, redraw.
+ * Gives up when a newer change started meanwhile.
  */
 async function changeCountry() {
-  const country = form.country.value;
+  const token = ++changeToken;
   try {
-    const cycle = await countryCycle(country);
-    if (country !== form.country.value) return;
+    const cycle = await countryCycle(form.country.value);
+    if (token !== changeToken) return;
     fillCycleOptions(cycle);
     showAccess(cycle);
     showFiles(cycle);
     showGauges(cycle);
   } catch (error) {
-    if (country !== form.country.value) return;
+    if (token !== changeToken) return;
     if (offset) showMissingCycle();
     else showError(error);
     return;
@@ -515,8 +521,11 @@ async function changeCountry() {
  * Clear the map when the selected hour has no published cycle.
  */
 function showMissingCycle() {
+  drawToken++;
+  gaugeToken++;
   viewer.clearFeatures();
   viewer.clearGauges();
+  clearGaugeList(document.getElementById("gauge-buttons"));
   showNothing("No cycle was published for this hour, or it has expired.");
 }
 

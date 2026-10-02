@@ -180,6 +180,13 @@ async function checkTimeline(evaluate) {
   await waitFor(evaluate, `${info}.startsWith("No cycle was published")`, "missing cycle message");
   await evaluate('document.getElementById("cycle-now").click()');
   await waitFor(evaluate, `document.getElementById("cycle-slider").value === "0" && ${fileLink}.includes("/20260101.000000/")`, "back to the latest cycle");
+  await evaluate(`(() => { const back = document.querySelector('[data-step="-1"]'); back.click(); back.click(); })()`);
+  await waitFor(evaluate, `${info}.startsWith("No cycle was published")`, "missing cycle after two quick steps");
+  await new Promise((resolve) => setTimeout(resolve, 1500));
+  const settled = await evaluate(`${info}.startsWith("No cycle was published") && !document.querySelector("img.raster") && !document.querySelectorAll(".leaflet-gauges-pane path").length`);
+  if (!settled) throw new Error(`stale draw after quick steps: ${await evaluate(info)}`);
+  await evaluate('document.getElementById("cycle-now").click()');
+  await waitFor(evaluate, `${fileLink}.includes("/20260101.000000/")`, "latest cycle again");
   await evaluate('document.getElementById("cycle-speed").click()');
   const speed = await evaluate('document.getElementById("cycle-speed").getAttribute("aria-label")');
   if (speed !== "Playback speed 2×") throw new Error(`speed button: ${speed}`);
