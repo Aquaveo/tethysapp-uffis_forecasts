@@ -139,6 +139,7 @@ async function check(evaluate) {
   if (!agency.startsWith("Warnings: INSIVUMEH portal https://insivumeh.uffis.org")) throw new Error(`agency line: ${agency}`);
   await waitFor(evaluate, 'document.getElementById("info").textContent.includes("qpeaccum") && document.getElementById("info").textContent.includes(" 7 cells shown")', "rainfall map with 7 cells");
   await checkTimeline(evaluate);
+  await checkCountryZoom(evaluate);
   await waitFor(evaluate, 'document.getElementById("files-summary").textContent.startsWith("10 files")', "file tree with 10 files");
   await waitFor(evaluate, 'document.querySelectorAll(".leaflet-gauges-pane path").length === 1', "one gauge marker");
   await waitFor(evaluate, 'document.querySelectorAll("#gauge-buttons .gauge-btn").length === 1 && document.querySelector("#gauge-buttons .gauge-btn").textContent === "Test gauge"', "gauge list button");
@@ -206,6 +207,20 @@ async function checkTimeline(evaluate) {
 }
 
 /**
+ * Clicking a country zooms to it even when it has nothing to draw.
+ * The fixtures hold Guatemala only, so Haiti has no cycle.
+ * @param {(expression: string) => Promise<any>} evaluate
+ */
+async function checkCountryZoom(evaluate) {
+  const view = 'getComputedStyle(document.querySelector(".leaflet-proxy")).transform';
+  const before = await evaluate(view);
+  await evaluate('document.querySelector("input[name=country][value=haiti]").click()');
+  await waitFor(evaluate, `${view} !== ${JSON.stringify(before)}`, "map moved to Haiti");
+  await evaluate('document.querySelector("input[name=country][value=guatemala]").click()');
+  await waitFor(evaluate, 'document.getElementById("viewer-title").textContent === "Guatemala" && (document.querySelector("#info a")?.href || "").includes("/guatemala/")', "back on Guatemala");
+}
+
+/**
  * With the outputs host down every card and the map report the failure.
  * @param {(expression: string) => Promise<any>} evaluate
  */
@@ -225,7 +240,7 @@ try {
   const down = await openPage(devtools, `http://127.0.0.1:${port}/?down=1`);
   await checkOutage(down.evaluate);
   down.close();
-  console.log("viewer smoke test ok: status, rainfall, cycle slider, gauge hydrograph, opacity, files sheet, flood and impact maps, file tree, outage");
+  console.log("viewer smoke test ok: status, rainfall, cycle slider, country zoom, gauge hydrograph, opacity, files sheet, flood and impact maps, file tree, outage");
 } catch (error) {
   failed = true;
   console.error(`viewer smoke test failed: ${error.message}`);

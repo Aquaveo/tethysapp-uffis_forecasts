@@ -3,13 +3,16 @@
  * and the legend classes used by the forecast app.
  */
 
-/** Countries in display order, keyed by their outputs/ folder. */
+/**
+ * Countries in display order, keyed by their outputs/ folder, with the
+ * map extent to zoom to as [[south, west], [north, east]].
+ */
 export const COUNTRIES = [
-  { key: "guatemala", name: "Guatemala" },
-  { key: "haiti", name: "Haiti" },
-  { key: "barbados", name: "Barbados" },
-  { key: "antigua", name: "Antigua and Barbuda" },
-  { key: "comoros", name: "Comoros" },
+  { key: "guatemala", name: "Guatemala", extent: [[13.7, -92.3], [17.9, -88.2]] },
+  { key: "haiti", name: "Haiti", extent: [[18.0, -74.5], [20.1, -71.6]] },
+  { key: "barbados", name: "Barbados", extent: [[13.03, -59.66], [13.34, -59.41]] },
+  { key: "antigua", name: "Antigua and Barbuda", extent: [[16.95, -61.95], [17.75, -61.65]] },
+  { key: "comoros", name: "Comoros", extent: [[-12.45, 43.2], [-11.35, 44.55]] },
 ];
 
 /** Minutes since publication before a country is late, then stale. */

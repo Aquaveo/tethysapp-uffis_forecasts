@@ -69,6 +69,13 @@ function showSelectedStatus() {
 }
 
 /**
+ * Zoom the map to the selected country's extent.
+ */
+function zoomToCountry() {
+  viewer.fit(COUNTRIES.find((c) => c.key === form.country.value).extent);
+}
+
+/**
  * Show or hide the control panel from its toggle button.
  * @param {HTMLButtonElement} button
  */
@@ -554,6 +561,7 @@ function refresh() {
  */
 function start() {
   fillRegions(regions, COUNTRIES);
+  regions.addEventListener("click", (event) => event.target.closest(".chip") && zoomToCountry());
   slider.min = String(-HOURS_BACK);
   applyOpacity();
   setOptions(form.depth, FLOOD_DEPTHS_CM.map((d) => ({ value: String(d), label: `${d} cm` })));
@@ -575,6 +583,7 @@ function start() {
   form.addEventListener("change", async (event) => {
     if (event.target.name === "opacity") return;
     if (event.target.name === "country") {
+      zoomToCountry();
       closeHydrograph();
       showSelectedStatus();
       showTime();
