@@ -76,6 +76,21 @@ export class ViewerMap {
   }
 
   /**
+   * Show an existing element in a map corner, above the legend when
+   * both share the corner.
+   * @param {HTMLElement} content
+   * @param {string} position Leaflet corner, e.g. bottomleft
+   */
+  addPanel(content, position) {
+    const control = L.control({ position });
+    control.onAdd = () => {
+      L.DomEvent.disableClickPropagation(content);
+      return content;
+    };
+    control.addTo(this.map);
+  }
+
+  /**
    * Set the raster overlay's opacity, now and for later layers.
    * @param {number} opacity 0 to 1
    */

@@ -259,7 +259,7 @@
 .uffis-viewer .hydro-head h2:focus { outline: none; }
 .uffis-viewer .hydro-summary { margin: 6px 0 0; font-size: 0.82rem; font-weight: 600; }
 .uffis-viewer .hydro-note { margin: 6px 0 0; color: var(--v-muted); font-size: 0.72rem; }
-.uffis-viewer .hydro { bottom: 180px; }
+.uffis-viewer .hydro { bottom: 124px; }
 .uffis-viewer .panel[hidden] ~ .cycle-bar, .uffis-viewer .panel[hidden] ~ .hydro { right: 224px; }
 
 
@@ -341,10 +341,32 @@
 .uffis-viewer .step:disabled { opacity: 0.4; cursor: default; }
 .uffis-viewer .step:disabled:hover { background: var(--v-console-fill); }
 .uffis-viewer .step.play[aria-pressed="true"] { background: var(--v-on-console); color: var(--v-ink); }
+.uffis-viewer .step.icon { display: inline-grid; place-items: center; width: 38px; padding: 4px 0; }
+.uffis-viewer .play .icon-pause, .uffis-viewer .play[aria-pressed="true"] .icon-play { display: none; }
+.uffis-viewer .play[aria-pressed="true"] .icon-pause { display: block; }
+.uffis-viewer .step.speed { min-width: 44px; font-variant-numeric: tabular-nums; }
+
+/* Layer note above the legend */
+.uffis-viewer .layer-info {
+  max-width: 220px;
+  margin-bottom: 8px;
+  padding: 6px 10px;
+  background: var(--v-glass);
+  color: var(--v-muted);
+  border-radius: 10px;
+  box-shadow: var(--v-shadow);
+  font-size: 0.76rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  transition: opacity 0.2s var(--v-ease);
+}
+
+.uffis-viewer .layer-info:empty { display: none; }
+.uffis-viewer .layer-info.loading { opacity: 0.45; }
+.uffis-viewer .layer-info .action { margin-left: 4px; font-size: inherit; }
+
 .uffis-viewer #cycle-slider { flex: 1; min-width: 60px; accent-color: var(--v-console-focus); }
 
-.uffis-viewer .cycle-bar .info { margin: 8px 0 0; color: var(--v-console-muted); font-size: 0.78rem; text-align: center; overflow-wrap: anywhere; }
-.uffis-viewer .cycle-bar .action { color: var(--v-console-focus); }
 
 .uffis-viewer .action {
   margin-left: 8px;
@@ -522,7 +544,8 @@
     font-size: 0.75rem;
   }
   .uffis-viewer .time-label { margin-bottom: 4px; font-size: 0.85rem; }
-  .uffis-viewer .wide-only, .uffis-viewer .cycle-bar .info { display: none; }
+  .uffis-viewer .wide-only { display: none; }
+  .uffis-viewer .layer-info { max-width: 62vw; }
   .uffis-viewer .hydro { left: 8px; right: 8px; bottom: 8px; max-width: none; margin: 0; z-index: 600; }
   .uffis-viewer .panel[hidden] ~ .cycle-bar, .uffis-viewer .panel[hidden] ~ .hydro { right: 8px; }
   .uffis-viewer .legend { padding: 6px 8px; font-size: 0.75rem; line-height: 1.35; }
@@ -546,6 +569,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .uffis-viewer .option span, .uffis-viewer .chip span { transition: none; }
+  .uffis-viewer .option span, .uffis-viewer .chip span, .uffis-viewer .layer-info { transition: none; }
   .uffis-viewer .step:active { transform: none; }
 }

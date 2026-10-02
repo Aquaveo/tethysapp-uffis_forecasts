@@ -30,12 +30,15 @@ const cycles = new Map();
 let drawToken = 0;
 let fittedKey = "";
 let filesCycle = null;
+viewer.addPanel(info, "bottomleft");
 let statuses = [];
 let gaugeToken = 0;
 let offset = 0;
 let playing = false;
 const slider = document.getElementById("cycle-slider");
 const PLAY_STEP_MS = 900;
+const SPEEDS = [1, 2, 4, 0.5];
+let speed = 1;
 const HYDRO_SIZE = { width: 520, height: 220 };
 
 /**
@@ -149,6 +152,17 @@ async function setOffset(hours) {
 }
 
 /**
+ * Step to the next playback speed and label the button with it.
+ * @param {HTMLButtonElement} button
+ */
+function cycleSpeed(button) {
+  speed = SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length];
+  const label = `${speed}×`;
+  button.textContent = label;
+  button.setAttribute("aria-label", `Playback speed ${label}`);
+}
+
+/**
  * Disable the steps that would leave the kept cycles, and Now at the
  * latest cycle.
  */
@@ -177,12 +191,13 @@ function setAnnouncements() {
 async function togglePlay(button) {
   playing = !playing;
   button.setAttribute("aria-pressed", String(playing));
-  button.textContent = playing ? "Pause" : "Play";
+  button.setAttribute("aria-label", playing ? "Pause" : "Play");
+  button.title = playing ? "Pause" : "Play";
   setAnnouncements();
   if (!playing) return;
   if (offset === 0) await setOffset(-HOURS_BACK);
   while (playing && offset < 0) {
-    await new Promise((resolve) => setTimeout(resolve, PLAY_STEP_MS));
+    await new Promise((resolve) => setTimeout(resolve, PLAY_STEP_MS / speed));
     if (playing) await setOffset(offset + 1);
   }
   if (playing) togglePlay(button);
@@ -225,7 +240,14 @@ async function draw() {
  * @param {() => boolean} current whether this draw is still the newest
  */
 async function drawLayer(current) {
-  const cycle = await countryCycle(form.country.value);
+  let cycle;
+  try {
+    cycle = await countryCycle(form.country.value);
+  } catch (error) {
+    if (!offset) throw error;
+    if (current()) showMissingCycle();
+    return;
+  }
   if (!current()) return;
   const layer = chosenLayer(cycle.paths, Object.fromEntries(new FormData(form)));
   if (form.product.value === "impact") {
@@ -237,16 +259,14 @@ async function drawLayer(current) {
     showNothing(layer.empty);
     return;
   }
-  info.textContent = "Loading…";
+  info.classList.add("loading");
   const raster = await loadRaster(`${cycle.root}/${layer.path}`);
   if (!current()) return;
   const legend = LEGENDS[form.product.value];
   const shown = showRaster(raster, legend, layer.key !== fittedKey);
   fittedKey = layer.key;
   viewer.setLegend(legend, layer.note);
-  const when = cycleTime(cycle.latest.cycle).toISOString().slice(0, 16).replace("T", " ");
-  info.replaceChildren(`Cycle ${when} UTC · ${layer.path.split("/").pop()} · ${shown.toLocaleString("en")} cells shown `,
-    openLink(`${cycle.root}/${layer.path}`, "open file"));
+  setInfo(`${productName(layer.path)} · ${shown.toLocaleString("en")} cells shown `, openLink(`${cycle.root}/${layer.path}`, "open file"));
 }
 
 /**
@@ -261,7 +281,7 @@ async function drawImpact(cycle, layer, current) {
     showNothing(layer.empty);
     return;
   }
-  info.textContent = "Loading…";
+  info.classList.add("loading");
   const [raster, admin, summary] = await Promise.all([
     layer.path ? loadRaster(`${cycle.root}/${layer.path}`) : null,
     fetchJson(`${cycle.root}/${layer.ibf.admin}`),
@@ -274,7 +294,7 @@ async function drawImpact(cycle, layer, current) {
   viewer.showFeatures(admin, popupElement, fit);
   fittedKey = layer.key;
   viewer.setLegend(IMPACT_LEGEND, layer.note);
-  info.replaceChildren(`${riskSummary(summary)} `, openLink(`${cycle.root}/${layer.ibf.admin}`, "open GeoJSON"));
+  setInfo(`${riskSummary(summary)} `, openLink(`${cycle.root}/${layer.ibf.admin}`, "open GeoJSON"));
 }
 
 /**
@@ -297,7 +317,25 @@ function showRaster(raster, legend, fit) {
 function showNothing(message) {
   viewer.clear();
   viewer.setLegend(null);
-  info.textContent = message;
+  setInfo(message);
+}
+
+/**
+ * Replace the layer note and end its loading dim.
+ * @param {...(string|Node)} parts
+ */
+function setInfo(...parts) {
+  info.classList.remove("loading");
+  info.replaceChildren(...parts);
+}
+
+/**
+ * A product file's name without its cycle stamp and extension.
+ * @param {string} path
+ * @returns {string}
+ */
+function productName(path) {
+  return path.split("/").pop().replace(/\.\d{8}\.\d{6}\.tif$/, "");
 }
 
 /**
@@ -343,7 +381,7 @@ function showError(error) {
   const retry = element("button", "action", "try again");
   retry.type = "button";
   retry.addEventListener("click", refresh);
-  info.replaceChildren(`Could not load this layer: ${error.message} `, retry);
+  setInfo(`Could not load this layer: ${error.message} `, retry);
 }
 
 /**
@@ -492,6 +530,8 @@ function start() {
   document.getElementById("cycle-now").addEventListener("click", () => setOffset(0));
   const play = document.getElementById("cycle-play");
   play.addEventListener("click", () => togglePlay(play));
+  const speedButton = document.getElementById("cycle-speed");
+  speedButton.addEventListener("click", () => cycleSpeed(speedButton));
   form.addEventListener("change", async (event) => {
     if (event.target.name === "opacity") return;
     if (event.target.name === "country") {

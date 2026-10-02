@@ -87,10 +87,15 @@
       <button type="button" class="step" data-step="1" aria-label="1 hour later">1h ›</button>
       <button type="button" class="step wide-only" data-step="6" aria-label="6 hours later">6h ›</button>
       <button id="cycle-now" type="button" class="step now">Now</button>
-      <button id="cycle-play" type="button" class="step play" aria-pressed="false">Play</button>
+      <button id="cycle-play" type="button" class="step play icon" aria-pressed="false" aria-label="Play" title="Play">
+        <svg class="icon-play" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3.5 2.2v9.6a.6.6 0 0 0 .9.5l7.6-4.8a.6.6 0 0 0 0-1L4.4 1.7a.6.6 0 0 0-.9.5Z" fill="currentColor"/></svg>
+        <svg class="icon-pause" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="3" y="2" width="3" height="10" rx="0.8" fill="currentColor"/><rect x="8" y="2" width="3" height="10" rx="0.8" fill="currentColor"/></svg>
+      </button>
+      <button id="cycle-speed" type="button" class="step speed" aria-label="Playback speed 1×" title="Playback speed">1×</button>
     </div>
-    <p id="info" class="info" aria-live="polite"></p>
   </div>
+
+  <p id="info" class="layer-info" aria-live="polite"></p>
 
   <dialog id="files-panel" class="files-panel" aria-labelledby="files-title">
     <form method="dialog" class="sheet-close"><button type="submit">Close</button></form>

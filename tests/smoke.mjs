@@ -174,11 +174,21 @@ async function checkTimeline(evaluate) {
   const step = (hours) => evaluate(`document.querySelector('[data-step="${hours}"]').click()`);
   await waitFor(evaluate, `${label} === "2026-01-01 00:00 UTC · latest" && document.getElementById("cycle-now").disabled && document.querySelector('[data-step="1"]').disabled`, "latest cycle label with Now and later steps disabled");
   await step(-1);
-  await waitFor(evaluate, `${label} === "2025-12-31 23:00 UTC · 1 h before latest" && ${info}.startsWith("Cycle 2025-12-31 23:00 UTC") && ${info}.includes(" 7 cells shown")`, "previous cycle drawn");
+  const fileLink = 'document.querySelector("#info a")?.href || ""';
+  await waitFor(evaluate, `${label} === "2025-12-31 23:00 UTC · 1 h before latest" && ${fileLink}.includes("/20251231.230000/") && ${info}.includes(" 7 cells shown")`, "previous cycle drawn");
   await step(-1);
   await waitFor(evaluate, `${info}.startsWith("No cycle was published")`, "missing cycle message");
   await evaluate('document.getElementById("cycle-now").click()');
-  await waitFor(evaluate, `document.getElementById("cycle-slider").value === "0" && ${info}.startsWith("Cycle 2026-01-01 00:00 UTC")`, "back to the latest cycle");
+  await waitFor(evaluate, `document.getElementById("cycle-slider").value === "0" && ${fileLink}.includes("/20260101.000000/")`, "back to the latest cycle");
+  await evaluate('document.getElementById("cycle-speed").click()');
+  const speed = await evaluate('document.getElementById("cycle-speed").getAttribute("aria-label")');
+  if (speed !== "Playback speed 2×") throw new Error(`speed button: ${speed}`);
+  await evaluate('document.getElementById("cycle-play").click()');
+  await waitFor(evaluate, 'document.getElementById("cycle-play").getAttribute("aria-label") === "Pause" && getComputedStyle(document.querySelector("#cycle-play .icon-pause")).display === "block"', "pause icon while playing");
+  await evaluate('document.getElementById("cycle-play").click()');
+  await waitFor(evaluate, 'document.getElementById("cycle-play").getAttribute("aria-label") === "Play"', "play icon after pausing");
+  await evaluate('document.getElementById("cycle-now").click()');
+  await waitFor(evaluate, `document.getElementById("cycle-slider").value === "0" && ${fileLink}.includes("/20260101.000000/") && !document.getElementById("info").classList.contains("loading")`, "settled on the latest cycle");
 }
 
 /**
