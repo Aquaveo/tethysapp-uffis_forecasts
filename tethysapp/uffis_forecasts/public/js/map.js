@@ -11,6 +11,8 @@ import { gaugeLabel } from "./gauges.js";
 const BASEMAP = "https://tiles.openfreemap.org/styles/positron";
 const RASTER = "forecast";
 const FEATURES = "impact";
+const FEATURE_FILL = "impact-fill";
+const FEATURE_LINE = "impact-line";
 const FIT_MARGIN = 16;
 const FIT_MS = 500;
 const BUSY_TEXT = { layer: "Loading layer…", overlay: "Loading layer…", tiles: "Loading base map…" };
@@ -36,13 +38,11 @@ export class ViewerMap {
       attributionControl: { compact: true },
     });
     this.map.touchZoomRotate.disableRotation();
-    const small = window.matchMedia(SMALL_SCREEN);
-    this.map.once("load", () => {
-      if (small.matches) container.querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show");
-    });
     this.map.keyboard.disableRotation();
+    const small = window.matchMedia(SMALL_SCREEN);
     this.ready = new Promise((resolve) => this.map.once("load", resolve)).then(() => {
       this.labels = this.map.getStyle().layers.find((layer) => layer.type === "symbol")?.id;
+      if (small.matches) container.querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show");
     });
     this.map.on("dataloading", () => this.setBusy("tiles", true));
     this.map.on("idle", () => {
@@ -56,10 +56,10 @@ export class ViewerMap {
     this.popup = null;
     this.markers = [];
     this.map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-left");
-    this.map.addControl(homeControl(() => this.goHome()), "top-left");
-    this.map.on("click", `${FEATURES}-fill`, (event) => this.openPopup(event));
-    this.map.on("mouseenter", `${FEATURES}-fill`, () => { this.map.getCanvas().style.cursor = "pointer"; });
-    this.map.on("mouseleave", `${FEATURES}-fill`, () => { this.map.getCanvas().style.cursor = ""; });
+    this.addPanel(homeButton(() => this.goHome()), "top-left");
+    this.map.on("click", FEATURE_FILL, (event) => this.openPopup(event));
+    this.map.on("mouseenter", FEATURE_FILL, () => { this.map.getCanvas().style.cursor = "pointer"; });
+    this.map.on("mouseleave", FEATURE_FILL, () => { this.map.getCanvas().style.cursor = ""; });
     this.legendOpen = !small.matches;
     small.addEventListener("change", (event) => this.setLegendOpen(!event.matches));
     this.legend = element("div", "legend");
@@ -88,7 +88,7 @@ export class ViewerMap {
         type: "raster",
         source: RASTER,
         paint: { "raster-opacity": this.opacity, "raster-resampling": "nearest", "raster-fade-duration": 0 },
-      }, this.map.getLayer(`${FEATURES}-fill`) ? `${FEATURES}-fill` : this.labels);
+      }, this.map.getLayer(FEATURE_FILL) ? FEATURE_FILL : this.labels);
     });
   }
 
@@ -164,6 +164,7 @@ export class ViewerMap {
    * @param {boolean} on
    */
   setBusy(source, on) {
+    if (this.busy.has(source) === on) return;
     if (on) this.busy.add(source);
     else this.busy.delete(source);
     const first = ["layer", "overlay", "tiles"].find((s) => this.busy.has(s));
@@ -185,8 +186,8 @@ export class ViewerMap {
     this.ready.then(() => {
       const color = ["coalesce", ["get", "risk_color"], "#555555"];
       this.map.addSource(FEATURES, { type: "geojson", data: geojson, generateId: true });
-      this.map.addLayer({ id: `${FEATURES}-fill`, type: "fill", source: FEATURES, paint: { "fill-color": color, "fill-opacity": 0.3 } }, this.labels);
-      this.map.addLayer({ id: `${FEATURES}-line`, type: "line", source: FEATURES, paint: { "line-color": color, "line-width": 2 } }, this.labels);
+      this.map.addLayer({ id: FEATURE_FILL, type: "fill", source: FEATURES, paint: { "fill-color": color, "fill-opacity": 0.3 } }, this.labels);
+      this.map.addLayer({ id: FEATURE_LINE, type: "line", source: FEATURES, paint: { "line-color": color, "line-width": 2 } }, this.labels);
     });
   }
 
@@ -209,7 +210,7 @@ export class ViewerMap {
     this.popup?.remove();
     this.popup = null;
     this.features = null;
-    this.ready.then(() => removeLayers(this.map, FEATURES, [`${FEATURES}-line`, `${FEATURES}-fill`]));
+    this.ready.then(() => removeLayers(this.map, FEATURES, [FEATURE_LINE, FEATURE_FILL]));
   }
 
   /**
@@ -279,12 +280,12 @@ export class ViewerMap {
 }
 
 /**
- * A map control with one button that zooms back to the country.
+ * A control box with one button that zooms back to the country.
  * @param {() => void} onClick
- * @returns {{onAdd: () => HTMLElement, onRemove: () => void}}
+ * @returns {HTMLElement}
  */
-function homeControl(onClick) {
-  const box = element("div", "maplibregl-ctrl maplibregl-ctrl-group home");
+function homeButton(onClick) {
+  const box = element("div", "maplibregl-ctrl-group home");
   const button = element("button");
   button.innerHTML = HOME_ICON;
   button.type = "button";
@@ -292,7 +293,7 @@ function homeControl(onClick) {
   button.setAttribute("aria-label", "Zoom to the country");
   button.addEventListener("click", onClick);
   box.append(button);
-  return { onAdd: () => box, onRemove: () => box.remove() };
+  return box;
 }
 
 /**
@@ -325,7 +326,7 @@ function removeLayers(map, source, layers) {
 }
 
 /**
- * Leaflet-style bounds as MapLibre [[west, south], [east, north]].
+ * [[south, west], [north, east]] as MapLibre [[west, south], [east, north]].
  * @param {number[][]} bounds [[south, west], [north, east]]
  * @returns {number[][]}
  */

@@ -20,8 +20,14 @@ const AGENCIES = '<script type="application/json" id="uffis-agencies">[{"country
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".tif": "image/tiff" };
 const TIMEOUT_MS = 30000;
 
-/** The page's map, from the entry module, inside an async expression. */
-const VIEWER = '(await import("/static/uffis_forecasts/js/main.js")).viewer';
+/**
+ * An expression evaluated with the page's map viewer bound to `viewer`.
+ * @param {string} expression
+ * @returns {string}
+ */
+function inViewer(expression) {
+  return `(async () => { const viewer = (await import("/static/uffis_forecasts/js/main.js")).viewer; return ${expression}; })()`;
+}
 
 /**
  * The viewer page as the portal renders it, minus the portal frame.
@@ -164,7 +170,7 @@ async function check(evaluate) {
   await evaluate('(() => { const f = document.getElementById("file-filter"); f.value = "prob_depth"; f.dispatchEvent(new Event("input")); })()');
   await waitFor(evaluate, 'document.getElementById("files-summary").textContent.startsWith("1 file matching") && [...document.querySelectorAll("#files a")].some((a) => a.href.endsWith("prob_depth_ge_10cm_overbank.20260101.000000.tif"))', "filtered tree with the flood raster link");
   await evaluate('(() => { const o = document.getElementById("opacity"); o.value = "40"; o.dispatchEvent(new Event("input")); })()');
-  await waitFor(evaluate, `(async () => ${VIEWER}.map.getPaintProperty("forecast", "raster-opacity") === 0.4 && document.getElementById("opacity-value").textContent === "40%")()`, "raster at 40% opacity");
+  await waitFor(evaluate, inViewer('viewer.map.getPaintProperty("forecast", "raster-opacity") === 0.4 && document.getElementById("opacity-value").textContent === "40%"'), "raster at 40% opacity");
   const opacityTop = 'Math.round(document.getElementById("opacity").getBoundingClientRect().top)';
   const before = await evaluate(opacityTop);
   await evaluate('(() => { const g = document.querySelector("input[name=gauges]"); g.click(); })()');
@@ -178,7 +184,7 @@ async function check(evaluate) {
   await evaluate('document.querySelector("input[name=product][value=flood]").click()');
   await waitFor(evaluate, 'document.getElementById("info").textContent.includes("prob_depth_ge_10cm") && document.getElementById("info").textContent.includes(" 5 cells shown")', "flood map with 5 cells");
   await evaluate('document.querySelector("input[name=product][value=impact]").click()');
-  await waitFor(evaluate, `(async () => document.getElementById("info").textContent.startsWith("Buildings at risk: 1 high, 2 medium, 5 low. People at low risk or worse: 42.") && ${VIEWER}.features?.geojson.features.length === 1 && Boolean(${VIEWER}.map.getLayer("impact-fill")))()`, "impact view with one municipality");
+  await waitFor(evaluate, inViewer('document.getElementById("info").textContent.startsWith("Buildings at risk: 1 high, 2 medium, 5 low. People at low risk or worse: 42.") && viewer.features?.geojson.features.length === 1 && Boolean(viewer.map.getLayer("impact-fill"))'), "impact view with one municipality");
 }
 
 /**
@@ -200,7 +206,7 @@ async function checkTimeline(evaluate) {
   await evaluate(`(() => { const back = document.querySelector('[data-step="-1"]'); back.click(); back.click(); })()`);
   await waitFor(evaluate, `${info}.startsWith("No cycle was published")`, "missing cycle after two quick steps");
   await new Promise((resolve) => setTimeout(resolve, 1500));
-  const settled = await evaluate(`(async () => ${info}.startsWith("No cycle was published") && !${VIEWER}.map.getLayer("forecast") && !document.querySelectorAll(".gauge-marker").length)()`);
+  const settled = await evaluate(inViewer(`${info}.startsWith("No cycle was published") && !viewer.map.getLayer("forecast") && !document.querySelectorAll(".gauge-marker").length`));
   if (!settled) throw new Error(`stale draw after quick steps: ${await evaluate(info)}`);
   await evaluate('document.getElementById("cycle-now").click()');
   await waitFor(evaluate, `${fileLink}.includes("/20260101.000000/")`, "latest cycle again");
@@ -221,7 +227,7 @@ async function checkTimeline(evaluate) {
  * @param {(expression: string) => Promise<any>} evaluate
  */
 async function checkCountryZoom(evaluate) {
-  const view = `(async () => ${VIEWER}.map.getCenter().toArray().join())()`;
+  const view = inViewer("viewer.map.getCenter().toArray().join()");
   const before = await evaluate(view);
   await evaluate('document.querySelector("input[name=country][value=haiti]").click()');
   await waitFor(evaluate, `${view} !== ${JSON.stringify(before)}`, "map moved to Haiti");
