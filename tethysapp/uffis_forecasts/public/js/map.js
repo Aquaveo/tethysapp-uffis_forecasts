@@ -13,7 +13,9 @@ const RASTER = "forecast";
 const FEATURES = "impact";
 const FEATURE_FILL = "impact-fill";
 const FEATURE_LINE = "impact-line";
+const BLANK_STYLE = { version: 8, sources: {}, layers: [{ id: "background", type: "background", paint: { "background-color": "#e9edf2" } }] };
 const FIT_MARGIN = 16;
+const MIN_VIEW = 120;
 const FIT_MS = 500;
 const BUSY_TEXT = { layer: "Loading layer…", overlay: "Loading layer…", tiles: "Loading base map…" };
 const HOME_ICON = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M2 7.5 8 2l6 5.5"/><path d="M3.8 6.4V14h8.4V6.4"/><path d="M6.6 14v-3.6h2.8V14"/></svg>';
@@ -40,8 +42,11 @@ export class ViewerMap {
     this.map.touchZoomRotate.disableRotation();
     this.map.keyboard.disableRotation();
     const small = window.matchMedia(SMALL_SCREEN);
-    this.ready = new Promise((resolve) => this.map.once("load", resolve)).then(() => {
+    this.fallBackOnStyleError();
+    this.ready = new Promise((resolve) => this.map.once("style.load", resolve)).then(() => {
       this.labels = this.map.getStyle().layers.find((layer) => layer.type === "symbol")?.id;
+    });
+    this.map.once("load", () => {
       if (small.matches) container.querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show");
     });
     this.map.on("dataloading", () => this.setBusy("tiles", true));
@@ -104,9 +109,22 @@ export class ViewerMap {
   /** Zoom back to the last fitted bounds, clear of the overlays. */
   goHome() {
     if (!this.home) return;
-    const { top, right, bottom, left } = this.insets;
-    const padding = { top: top + FIT_MARGIN, right: right + FIT_MARGIN, bottom: bottom + FIT_MARGIN, left: left + FIT_MARGIN };
+    const box = this.map.getContainer();
+    const padding = fitPadding(this.insets, box.clientWidth, box.clientHeight);
     this.map.fitBounds(lngLatBounds(this.home), { padding, duration: FIT_MS });
+  }
+
+  /**
+   * Swap in a blank basemap if the style fails, so forecasts still draw.
+   */
+  fallBackOnStyleError() {
+    const fallBack = () => {
+      if (this.map.isStyleLoaded()) return;
+      this.map.off("error", fallBack);
+      this.map.setStyle(BLANK_STYLE);
+    };
+    this.map.on("error", fallBack);
+    this.map.once("style.load", () => this.map.off("error", fallBack));
   }
 
   /**
@@ -323,6 +341,41 @@ function gaugeButton(gauge, onSelect) {
 function removeLayers(map, source, layers) {
   layers.forEach((id) => { if (map.getLayer(id)) map.removeLayer(id); });
   if (map.getSource(source)) map.removeSource(source);
+}
+
+/**
+ * Fit padding clear of the overlays, or a plain margin when the
+ * overlays would leave too little map to fit into.
+ * @param {{top: number, right: number, bottom: number, left: number}} insets pixels
+ * @param {number} width map width in pixels
+ * @param {number} height map height in pixels
+ * @returns {{top: number, right: number, bottom: number, left: number}}
+ */
+export function fitPadding({ top, right, bottom, left }, width, height) {
+  const roomy = width - left - right - 2 * FIT_MARGIN >= MIN_VIEW && height - top - bottom - 2 * FIT_MARGIN >= MIN_VIEW;
+  if (!roomy) return { top: FIT_MARGIN, right: FIT_MARGIN, bottom: FIT_MARGIN, left: FIT_MARGIN };
+  return { top: top + FIT_MARGIN, right: right + FIT_MARGIN, bottom: bottom + FIT_MARGIN, left: left + FIT_MARGIN };
+}
+
+/**
+ * How far the navigation, time bar and panel cover each map edge.
+ * The bar docks at the top or bottom; a narrow panel sits beside the
+ * map and a wide one is a bottom sheet.
+ * @param {{width: number, height: number}} view viewport size
+ * @param {number} nav height covered by the navigation
+ * @param {{top: number, bottom: number, height: number}|null} bar time bar box, null when hidden
+ * @param {{top: number, left: number, width: number}|null} panel panel box, null when hidden
+ * @returns {{top: number, right: number, bottom: number, left: number}} pixels
+ */
+export function edgeInsets(view, nav, bar, panel) {
+  const insets = { top: nav, right: 0, bottom: 0, left: 0 };
+  if (bar && bar.height) {
+    if (bar.top < view.height / 2) insets.top = Math.max(nav, bar.bottom);
+    else insets.bottom = view.height - bar.top;
+  }
+  if (panel && panel.width < view.width / 2) insets.right = view.width - panel.left;
+  else if (panel) insets.bottom = Math.max(insets.bottom, view.height - panel.top);
+  return insets;
 }
 
 /**

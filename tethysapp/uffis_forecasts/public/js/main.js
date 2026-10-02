@@ -9,7 +9,7 @@ import { element, setOptions } from "./dom.js";
 import { buildTree, filterFiles, folderElement, formatBytes } from "./files.js";
 import { RUNS, ensembleStats, gaugeFiles, gaugeLabel, parseGauges, parseSeries } from "./gauges.js";
 import { RUN_STYLE, hydrographSummary, hydrographSvg } from "./hydrograph.js";
-import { ViewerMap } from "./map.js";
+import { ViewerMap, edgeInsets } from "./map.js";
 import { agenciesByCountry, clearGaugeList, dimGaugeList, fillGauges, fillRegions, markRegions, showAgency } from "./panel.js";
 import { popupElement, riskSummary } from "./impact.js";
 import { chosenLayer, siteChoices } from "./layers.js";
@@ -96,30 +96,13 @@ function trackOverlays() {
   const panel = document.getElementById("panel");
   const update = () => {
     root.style.setProperty("--dock", `${bar.offsetHeight}px`);
-    viewer.setInsets(overlayInsets(bar, panel));
+    const view = { width: window.innerWidth, height: window.innerHeight };
+    viewer.setInsets(edgeInsets(view, NAV_INSET, bar.getBoundingClientRect(), panel.hidden ? null : panel.getBoundingClientRect()));
   };
   const observer = new ResizeObserver(update);
   observer.observe(bar);
   observer.observe(panel);
   update();
-}
-
-/**
- * How far the navigation, time bar and a side panel reach into the map.
- * @param {HTMLElement} bar
- * @param {HTMLElement} panel
- * @returns {{top: number, right: number, bottom: number, left: number}} pixels
- */
-function overlayInsets(bar, panel) {
-  const dock = bar.getBoundingClientRect();
-  const side = panel.getBoundingClientRect();
-  const besideMap = !panel.hidden && side.width < window.innerWidth / 2;
-  return {
-    top: NAV_INSET,
-    right: besideMap ? window.innerWidth - side.left : 0,
-    bottom: dock.height ? window.innerHeight - dock.top : 0,
-    left: 0,
-  };
 }
 
 /**

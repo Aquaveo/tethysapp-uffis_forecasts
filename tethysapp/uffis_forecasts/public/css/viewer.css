@@ -612,7 +612,8 @@
     left: 8px;
     width: auto;
     max-height: 62%;
-    background: var(--v-surface);
+    /* Opaque scroller blanks WebGL map */
+    background: color-mix(in oklch, var(--v-surface) 98%, transparent);
     z-index: 900;
   }
 
@@ -656,6 +657,7 @@
   .uffis-viewer .step { padding-inline: 6px; }
   .uffis-viewer .wide-only { display: none; }
   .uffis-viewer .panel:not([hidden]) ~ .cycle-bar { display: none; }
+  .uffis-viewer:has(.panel:not([hidden])) :is(.maplibregl-ctrl-bottom-left, .maplibregl-ctrl-bottom-right) { visibility: hidden; }
   .uffis-viewer .panel[hidden] ~ .cycle-bar, .uffis-viewer .panel[hidden] ~ .hydro { right: 8px; }
 
   /* Corners clear the dock */
@@ -676,6 +678,7 @@
     max-height: 72%;
     margin: 0;
     overflow-y: auto;
+    background: color-mix(in oklch, var(--v-surface) 98%, transparent);
     z-index: 600;
   }
 
