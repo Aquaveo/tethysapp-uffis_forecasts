@@ -202,7 +202,7 @@
 .uffis-viewer .hydro-legend li { display: flex; align-items: center; gap: 6px; }
 .uffis-viewer .hydro-legend .swatch { width: 14px; height: 4px; border-radius: 2px; }
 .uffis-viewer .hydro-note { margin: 6px 0 0; color: var(--muted); font-size: 0.72rem; }
-.uffis-viewer .hydro:not([hidden]) ~ .cycle-bar { display: none; }
+.uffis-viewer .hydro { bottom: 180px; }
 
 .uffis-viewer .opacity { display: grid; gap: 4px; margin-top: 8px; font-weight: 600; }
 .uffis-viewer .opacity span { display: flex; justify-content: space-between; }
@@ -249,13 +249,37 @@
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
-  max-width: min(640px, calc(100% - 24px));
-  padding: 10px 18px;
+  width: min(600px, calc(100% - 560px));
+  min-width: 420px;
+  padding: 10px 16px 12px;
   background: var(--dark-glass);
-  color: #ffffff;
+  color: #f3f5f8;
 }
 
-.uffis-viewer .cycle-bar .info { margin: 0; text-align: center; overflow-wrap: anywhere; }
+.uffis-viewer .time-label { margin: 0 0 8px; text-align: center; font-size: 1.05rem; font-weight: 700; letter-spacing: 0.01em; }
+.uffis-viewer .time-controls { display: flex; align-items: center; gap: 6px; }
+
+.uffis-viewer .step {
+  flex: none;
+  min-height: 32px;
+  padding: 4px 9px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #e7ebf1;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.uffis-viewer .step:hover { background: rgba(255, 255, 255, 0.2); }
+.uffis-viewer .step:focus-visible, .uffis-viewer #cycle-slider:focus-visible { outline: 3px solid #9cc1ff; outline-offset: 2px; }
+.uffis-viewer .step.now { background: #1f8a4c; border-color: #1f8a4c; color: #ffffff; }
+.uffis-viewer .step.play[aria-pressed="true"] { background: #f3f5f8; color: #1c2430; }
+.uffis-viewer #cycle-slider { flex: 1; min-width: 60px; accent-color: #9cc1ff; }
+
+.uffis-viewer .cycle-bar .info { margin: 8px 0 0; color: #c8d0db; font-size: 0.78rem; text-align: center; overflow-wrap: anywhere; }
 .uffis-viewer .cycle-bar .action { color: #9cc1ff; }
 
 .uffis-viewer .action {
@@ -421,11 +445,14 @@
     bottom: auto;
     left: 56px;
     right: 8px;
-    max-width: none;
+    width: auto;
+    min-width: 0;
     transform: none;
-    padding: 6px 10px;
+    padding: 6px 10px 8px;
     font-size: 0.75rem;
   }
+  .uffis-viewer .time-label { margin-bottom: 4px; font-size: 0.85rem; }
+  .uffis-viewer .wide-only, .uffis-viewer .cycle-bar .info { display: none; }
   .uffis-viewer .hydro { left: 8px; right: 8px; bottom: 8px; width: auto; transform: none; z-index: 600; }
   .uffis-viewer .legend { padding: 6px 8px; font-size: 0.7rem; line-height: 1.35; }
   .uffis-viewer .legend .note { display: none; }

@@ -136,6 +136,7 @@ async function check(evaluate) {
   const agency = await evaluate('document.getElementById("agency").textContent + " " + document.querySelector("#agency a")?.href');
   if (!agency.startsWith("Warnings for Guatemala: INSIVUMEH portal https://insivumeh.uffis.org")) throw new Error(`agency line: ${agency}`);
   await waitFor(evaluate, 'document.getElementById("info").textContent.includes("qpeaccum") && document.getElementById("info").textContent.includes(" 7 cells shown")', "rainfall map with 7 cells");
+  await checkTimeline(evaluate);
   await waitFor(evaluate, 'document.getElementById("files-summary").textContent.startsWith("10 files")', "file tree with 10 files");
   await waitFor(evaluate, 'document.querySelectorAll(".leaflet-gauges-pane path").length === 1', "one gauge marker");
   await evaluate('document.querySelector(".leaflet-gauges-pane path").dispatchEvent(new MouseEvent("click", { bubbles: true }))');
@@ -159,6 +160,23 @@ async function check(evaluate) {
 }
 
 /**
+ * Step back one cycle, then to an hour with none, then to the latest.
+ * @param {(expression: string) => Promise<any>} evaluate
+ */
+async function checkTimeline(evaluate) {
+  const label = 'document.getElementById("cycle-label").textContent';
+  const info = 'document.getElementById("info").textContent';
+  const step = (hours) => evaluate(`document.querySelector('[data-step="${hours}"]').click()`);
+  await waitFor(evaluate, `${label} === "2026-01-01 00:00 UTC · latest"`, "latest cycle label");
+  await step(-1);
+  await waitFor(evaluate, `${label} === "2025-12-31 23:00 UTC · 1 h before latest" && ${info}.startsWith("Cycle 2025-12-31 23:00 UTC") && ${info}.includes(" 7 cells shown")`, "previous cycle drawn");
+  await step(-1);
+  await waitFor(evaluate, `${info}.startsWith("No cycle was published")`, "missing cycle message");
+  await evaluate('document.getElementById("cycle-now").click()');
+  await waitFor(evaluate, `document.getElementById("cycle-slider").value === "0" && ${info}.startsWith("Cycle 2026-01-01 00:00 UTC")`, "back to the latest cycle");
+}
+
+/**
  * With the outputs host down every card and the map report the failure.
  * @param {(expression: string) => Promise<any>} evaluate
  */
@@ -178,7 +196,7 @@ try {
   const down = await openPage(devtools, `http://127.0.0.1:${port}/?down=1`);
   await checkOutage(down.evaluate);
   down.close();
-  console.log("viewer smoke test ok: status, rainfall, gauge hydrograph, opacity, files sheet, flood and impact maps, file tree, outage");
+  console.log("viewer smoke test ok: status, rainfall, cycle slider, gauge hydrograph, opacity, files sheet, flood and impact maps, file tree, outage");
 } catch (error) {
   failed = true;
   console.error(`viewer smoke test failed: ${error.message}`);

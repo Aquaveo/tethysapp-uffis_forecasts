@@ -13,9 +13,10 @@ import { ViewerMap, gaugeLabel } from "./map.js";
 import { agenciesByCountry, fillRegions, markRegions, showAgency } from "./panel.js";
 import { popupElement, riskSummary } from "./impact.js";
 import { chosenLayer, siteChoices } from "./layers.js";
-import { basinsOf, cycleTime, fetchJson, fetchOk, loadCycle, outputsBase, withoutCountry } from "./outputs.js";
+import { basinsOf, cycleTime, fetchJson, fetchOk, loadCycle, loadCycleAt, outputsBase, withoutCountry } from "./outputs.js";
 import { loadRaster, rasterBounds } from "./raster.js";
 import { loadStatus, statusCard } from "./status.js";
+import { HOURS_BACK, clampOffset, shiftCycle, timeLabel } from "./timeline.js";
 
 const REFRESH_MS = 5 * 60 * 1000;
 const base = outputsBase(window.location, document.getElementById("uffis-viewer").dataset.outputsBase);
@@ -31,6 +32,10 @@ let fittedKey = "";
 let filesCycle = null;
 let statuses = [];
 let gaugeToken = 0;
+let offset = 0;
+let playing = false;
+const slider = document.getElementById("cycle-slider");
+const PLAY_STEP_MS = 900;
 const HYDRO_SIZE = { width: 520, height: 220 };
 
 /**
@@ -78,20 +83,86 @@ function applyOpacity() {
 }
 
 /**
+ * Load something once and keep it, forgetting a failure so the next
+ * request retries it.
+ * @param {string} key
+ * @param {() => Promise<any>} load
+ * @returns {Promise<any>}
+ */
+function cached(key, load) {
+  if (!cycles.has(key)) {
+    const pending = load();
+    cycles.set(key, pending);
+    pending.catch(() => {
+      if (cycles.get(key) === pending) cycles.delete(key);
+    });
+  }
+  return cycles.get(key);
+}
+
+/**
  * The newest cycle of a country, loaded once per refresh period.
- * A failed load is forgotten so the next request retries it.
  * @param {string} country
  * @returns {Promise<{latest: object, paths: string[], root: string}>}
  */
-function countryCycle(country) {
-  if (!cycles.has(country)) {
-    const pending = loadCycle(base, country);
-    cycles.set(country, pending);
-    pending.catch(() => {
-      if (cycles.get(country) === pending) cycles.delete(country);
-    });
+function latestCycle(country) {
+  return cached(`${country}/latest`, () => loadCycle(base, country));
+}
+
+/**
+ * The cycle the time slider points at for a country. Past cycles do
+ * not change, so each is loaded once.
+ * @param {string} country
+ * @returns {Promise<{latest: object, paths: string[], root: string}>}
+ */
+async function countryCycle(country) {
+  const latest = await latestCycle(country);
+  if (!offset) return latest;
+  const name = shiftCycle(latest.latest.cycle, offset);
+  return cached(`${country}/${name}`, () => loadCycleAt(base, country, name));
+}
+
+/**
+ * Show the selected cycle's time beside the slider.
+ */
+async function showTime() {
+  try {
+    const latest = await latestCycle(form.country.value);
+    document.getElementById("cycle-label").textContent = timeLabel(latest.latest.cycle, offset);
+  } catch {
+    document.getElementById("cycle-label").textContent = "No cycle published";
   }
-  return cycles.get(country);
+}
+
+/**
+ * Point the viewer at the cycle some hours before the latest one.
+ * @param {number} hours 0 or negative
+ * @returns {Promise<void>}
+ */
+async function setOffset(hours) {
+  offset = clampOffset(hours);
+  slider.value = String(offset);
+  closeHydrograph();
+  showTime();
+  await changeCountry();
+}
+
+/**
+ * Play through the kept cycles up to the latest, or stop playing.
+ * Each step waits for its map to draw.
+ * @param {HTMLButtonElement} button
+ */
+async function togglePlay(button) {
+  playing = !playing;
+  button.setAttribute("aria-pressed", String(playing));
+  button.textContent = playing ? "Pause" : "Play";
+  if (!playing) return;
+  if (offset === 0) await setOffset(-HOURS_BACK);
+  while (playing && offset < 0) {
+    await new Promise((resolve) => setTimeout(resolve, PLAY_STEP_MS));
+    if (playing) await setOffset(offset + 1);
+  }
+  if (playing) togglePlay(button);
 }
 
 /**
@@ -339,19 +410,31 @@ async function changeCountry() {
     showFiles(cycle);
     showGauges(cycle);
   } catch (error) {
-    if (country === form.country.value) showError(error);
+    if (country !== form.country.value) return;
+    if (offset) showMissingCycle();
+    else showError(error);
     return;
   }
   await draw();
 }
 
 /**
- * Periodic refresh: forget loaded cycles, reload the cards and move
- * the map to the newest cycle of the selected country.
+ * Clear the map when the selected hour has no published cycle.
+ */
+function showMissingCycle() {
+  viewer.clearFeatures();
+  viewer.clearGauges();
+  showNothing("No cycle was published for this hour, or it has expired.");
+}
+
+/**
+ * Periodic refresh: forget the latest cycles, reload the cards and
+ * move the map to the newest cycle of the selected country.
  */
 function refresh() {
-  cycles.clear();
+  for (const key of [...cycles.keys()]) if (key.endsWith("/latest")) cycles.delete(key);
   refreshStatus();
+  showTime();
   changeCountry();
 }
 
@@ -367,11 +450,19 @@ function start() {
   toggle.addEventListener("click", () => togglePanel(toggle));
   document.getElementById("open-files").addEventListener("click", () => document.getElementById("files-panel").showModal());
   document.getElementById("close-hydro").addEventListener("click", closeHydrograph);
+  slider.addEventListener("change", () => setOffset(Number(slider.value)));
+  for (const button of document.querySelectorAll("[data-step]")) {
+    button.addEventListener("click", () => setOffset(offset + Number(button.dataset.step)));
+  }
+  document.getElementById("cycle-now").addEventListener("click", () => setOffset(0));
+  const play = document.getElementById("cycle-play");
+  play.addEventListener("click", () => togglePlay(play));
   form.addEventListener("change", async (event) => {
     if (event.target.name === "opacity") return;
     if (event.target.name === "country") {
       closeHydrograph();
       showSelectedStatus();
+      showTime();
       changeCountry();
       return;
     }

@@ -43,6 +43,19 @@ export async function fetchJson(url) {
 }
 
 /**
+ * Load one cycle of a country by its folder name.
+ * @param {string} base
+ * @param {string} country
+ * @param {string} cycle e.g. 20261002.020000
+ * @returns {Promise<{latest: {cycle: string}, files: {path: string, size: number}[], paths: string[], root: string}>}
+ */
+export async function loadCycleAt(base, country, cycle) {
+  const root = `${base}/${country}/${cycle}`;
+  const index = await fetchJson(`${root}/index.json`);
+  return { latest: { cycle }, files: index.files, paths: index.files.map((file) => file.path), root };
+}
+
+/**
  * Load a country's newest cycle: its latest.json and index.json.
  * @param {string} base
  * @param {string} country
@@ -50,9 +63,7 @@ export async function fetchJson(url) {
  */
 export async function loadCycle(base, country) {
   const latest = await fetchJson(`${base}/${country}/latest.json`);
-  const root = `${base}/${country}/${latest.cycle}`;
-  const index = await fetchJson(`${root}/index.json`);
-  return { latest, files: index.files, paths: index.files.map((file) => file.path), root };
+  return { ...(await loadCycleAt(base, country, latest.cycle)), latest };
 }
 
 /**
